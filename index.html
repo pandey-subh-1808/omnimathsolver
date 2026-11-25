@@ -101,7 +101,7 @@ def run(q):
         if op in ('simplify','factor','expand'):
             f=P(args[0]); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
         if op in ('det','inv','rank','eigenvals'):
-            M=P(args[0])
+            M=P(args[0]); M=sp.Matrix(M) if isinstance(M,(list,tuple)) else M
             if op=='det': ans=M.det()
             elif op=='inv': ans=M.inv()
             elif op=='rank': ans=M.rank()
