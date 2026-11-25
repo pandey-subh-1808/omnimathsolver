@@ -82,7 +82,43 @@ def run(q):
             if len(args)>=4:
                 lo,hi=P(args[2]),P(args[3]); ans=sp.integrate(f,(v,lo,hi))
                 return ('Definite integral',ans,[('Integrand',f),('Bounds',sp.Tuple(lo,hi)),('Exact evaluation',ans)])
-            ans=sp.integrate(f,v)
+            # Try several symbolic rewrites and fallback methods before declaring failure.
+            candidates=[f]
+            for transform in (
+                lambda q: sp.trigsimp(q),
+                lambda q: sp.simplify(sp.trigsimp(q)),
+                lambda q: sp.cancel(sp.together(q)),
+                lambda q: sp.expand_trig(q),
+                lambda q: sp.fu(q)
+            ):
+                try:
+                    candidate=transform(f)
+                    if candidate not in candidates:
+                        candidates.append(candidate)
+                except Exception:
+                    pass
+            ans=sp.Integral(f,v)
+            for candidate in candidates:
+                try:
+                    trial=sp.integrate(candidate,v,meijerg=False)
+                    if not trial.has(sp.Integral):
+                        ans=trial
+                        break
+                except Exception:
+                    continue
+            if ans.has(sp.Integral):
+                try:
+                    trial=sp.integrals.heurisch.heurisch(f,v)
+                    if trial is not None and not trial.has(sp.Integral):
+                        ans=trial
+                except Exception:
+                    pass
+            if ans.has(sp.Integral):
+                return ('Indefinite integral — no antiderivative found',ans,[
+                    ('Original integrand',f),
+                    ('Methods attempted',sp.Symbol('trigonometric simplification, algebraic rewriting, expansion and heuristic integration')),
+                    ('Status',sp.Symbol('No closed-form antiderivative was found. This integral is not marked as solved.'))
+                ])
             return ('Indefinite integral',ans,[('Integrand',f),('Antiderivative',ans),('Constant of integration',sp.Symbol('C'))])
         if op=='solve':
             eq=args[0]
@@ -134,22 +170,14 @@ function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setR
 function preview(){const q=$('input').value.trim();$('preview').textContent=q?'\\('+q+'\\)':'';if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{})}
 function render(data,q){
  lastAnswer=data.plain;
- let html='<section class="card"><div class="row" style="justify-content:space-between"><div class="section-title" style="margin:0">Result</div><span class="pill">'+esc(data.title)+'</span></div><div class="result">\\['+data.latex+'\\]</div><div class="section-title">Mathematical working</div>';
+ const notSolved=data.title.includes('no antiderivative found');
+ let html='<section class="card"><div class="row" style="justify-content:space-between"><div class="section-title" style="margin:0">'+(notSolved?'Integration status':'Result')+'</div><span class="pill">'+esc(data.title)+'</span></div>';
+ if(notSolved) html+='<div class="error"><b>Not solved.</b> The engine tried several symbolic transformations and integration strategies but could not find a closed-form antiderivative. It will not present the unevaluated integral as a solution.</div>';
+ html+='<div class="result">\\['+data.latex+'\\]</div><div class="section-title">Mathematical working</div>';
  data.steps.forEach((s,i)=>{html+='<div class="step"><div class="num">'+(i+1)+'</div><div class="step-body"><b>'+esc(s.label)+'</b><div>\\['+s.latex+'\\]</div></div></div>'});
  html+='</section>';$('output').innerHTML=html;
  if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('output')]).catch(()=>{});
  history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);drawHistory();
-}
-async function calculate(qOverride){
- const q=(qOverride??$('input').value).trim();if(!q)return;
- if(!engineReady){$('output').innerHTML='<section class="card error">The symbolic mathematics engine is still loading. Please wait until the status says “SymPy symbolic engine ready”.</section>';return}
- $('output').innerHTML='<section class="card"><span class="dot ready"></span> Calculating symbolically…</section>';
- try{
-  py.globals.set('USER_EXPRESSION',q);
-  const obj=await py.runPythonAsync("answer(USER_EXPRESSION)");
-  const data=obj.toJs({dict_converter:Object.fromEntries});obj.destroy();
-  render(data,q);
- }catch(e){$('output').innerHTML='<section class="card error"><b>Could not evaluate this input.</b><div>'+esc(String(e).replace(/^PythonError:s*/,'').slice(0,700))+'</div><p class="hint">Check the syntax and variable names. Supported commands include diff, integrate, solve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></section>'}
 }
 function drawHistory(){
  $('history').innerHTML=history.length?history.map((h,i)=>'<div class="history-item" data-i="'+i+'"><span>'+esc(h.q)+'</span><span class="hint">'+esc(h.answer.slice(0,65))+'</span></div>').join(''):'<p class="hint">Your recent calculations will appear here.</p>';
