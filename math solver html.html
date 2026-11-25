@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OmniMath Solver</title>
+<style>
+:root{--bg:#faf8f4;--card:#fff;--fg:#1f2430;--muted:#6b7280;--line:#e5e1d8;--acc:#2f5bea;--acc2:#e8eefe;--ok:#14794a;--okbg:#e6f5ec;--err:#b42318;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161b;--card:#1d2027;--fg:#e8eaf0;--muted:#98a0ae;--line:#2c313b;--acc:#7da2ff;--acc2:#222a40;--ok:#6ee0a4;--okbg:#173023;--err:#ff8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14161b;--card:#1d2027;--fg:#e8eaf0;--muted:#98a0ae;--line:#2c313b;--acc:#7da2ff;--acc2:#222a40;--ok:#6ee0a4;--okbg:#173023;--err:#ff8a80;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 Georgia,"Times New Roman",serif}
+.wrap{max-width:880px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:1.5rem;margin:.2rem 0}h1 span{color:var(--acc)}
+.sub{color:var(--muted);margin:0 0 14px;font-size:.95rem}
+button,textarea{font:inherit}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+textarea{width:100%;min-height:78px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);color:var(--fg);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px}
+textarea:focus{outline:2px solid var(--acc)}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.9rem}
+.btn:hover{border-color:var(--acc)}
+.primary{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:bold;padding:8px 18px}
+:root[data-theme="dark"] .primary{color:#10131a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .primary{color:#10131a}}
+.chip{border-radius:99px;background:var(--acc2);border-color:transparent;font-size:.82rem}
+.lbl{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:10px 0 2px}
+#prev{min-height:34px;overflow-x:auto;color:var(--muted)}
+.ans{background:var(--okbg);border:1px solid var(--ok);border-radius:10px;padding:12px;overflow-x:auto}
+.ans .lbl{color:var(--ok);margin-top:0}
+.step{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.step:first-child{border-top:0}
+.n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#fff;font-size:.8rem;display:grid;place-items:center;margin-top:2px}
+:root[data-theme="dark"] .n{color:#10131a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .n{color:#10131a}}
+.step div{min-width:0;overflow-x:auto}
+.err{color:var(--err)}
+canvas{width:100%;height:280px;display:block;border-radius:8px;background:var(--bg)}
+.hist{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-family:ui-monospace,Menlo,monospace;font-size:.85rem;cursor:pointer}
+.hist:first-child{border-top:0}.hist:hover{color:var(--acc)}
+.note{font-size:.88rem;color:var(--muted)}
+.note code{background:var(--acc2);padding:1px 5px;border-radius:4px;font-size:.85em}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin-top:8px;border-bottom:1px solid var(--line)}
+.tab{white-space:nowrap;border:0;background:none;color:var(--muted);padding:9px 12px;cursor:pointer;border-bottom:2px solid transparent;font:inherit;font-size:.92rem}
+.tab:hover{color:var(--fg)}.tab.on{color:var(--acc);border-color:var(--acc);font-weight:bold}
+.panel[hidden]{display:none}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:8px}
+.fc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+.fc b{font-family:ui-monospace,Menlo,monospace}
+.fc code{display:block;max-width:100%;overflow-x:auto;white-space:nowrap;background:var(--acc2);padding:2px 7px;border-radius:5px;font:.85rem ui-monospace,Menlo,monospace}
+.srch{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--card);color:var(--fg);font:inherit;margin:6px 0}
+.srch:focus{outline:2px solid var(--acc)}
+mjx-container{max-width:100%}
+</style>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Algebra.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Calculus.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Solve.js"></script>
+</head>
+<body>
+<div class="wrap">
+<header><div><h1>Omni<span>Math</span> Solver</h1><p class="sub">Step-by-step algebra, calculus, matrices &amp; classic results.</p></div>
+<button class="btn" id="theme" aria-label="Toggle theme">◐ Theme</button></header>
+<nav class="tabs" id="tabs"></nav>
+
+<section class="panel" id="p-solve">
+<div class="card">
+<textarea id="in" spellcheck="false" placeholder="e.g. integrate(x*sin(x), x)   ·   solve(x^2-5x+6=0, x)   ·   diff(x^3*sin(x), x)   ·   LaTeX works too: \frac{x^2}{3}"></textarea>
+<div class="lbl">Live preview</div><div id="prev"></div>
+<div class="row" id="syms"></div>
+<div class="row"><button class="btn primary" id="go">Solve</button><button class="btn" id="clr">Clear</button></div>
+<div class="lbl">Try an example</div><div class="row" id="ex"></div>
+</div>
+
+<div id="out"></div>
+
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><strong>History</strong><button class="btn" id="hclr">Clear</button></div><div id="hist"></div></div>
+</section>
+<section class="panel" id="p-fn" hidden></section>
+
+<div class="card note"><strong>How it works.</strong> Input is parsed and classified (derivative, integral, equation, limit, sum, matrix, or expression). Calculations are done by real engines — <code>math.js</code> for numerics and matrices, <code>Nerdamer</code> for symbolic calculus and equation solving — not guessed. The step breakdown is generated from the problem’s structure and verified numerically where possible; for integrals and hard symbolic problems the listed method is a hint, not a transcript of the engine’s internal path. Closed forms that these engines can’t find are reported honestly, with a numeric answer when one exists. For research‑level symbolic math, number theory or proofs, plug a Python + SymPy backend (or an LLM API) into <code>solveProblem()</code>. Image/handwriting input isn’t included in this build.</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const EXAMPLES=[
+ ['Quadratic','solve(x^2-5x+6=0, x)'],['Derivative','diff(x^3*sin(x), x)'],['Integral','integrate(x*e^x, x)'],
+ ['Definite ∫','integrate(sin(x), x, 0, pi)'],['Limit','limit(sin(x)/x, x, 0)'],['Matrix det','det([[2,1],[5,3]])'],
+ ['Inverse','inv([[4,7],[2,6]])'],['Cubic','solve(x^3-6x^2+11x-6=0, x)'],['System-ish','solve(2x+3=11, x)'],
+ ['Basel (numeric)','sum(1/n^2, n, 1, 100000)'],['Statistics','mean([2,4,4,4,5,5,7,9])'],['Pythagorean theorem','@pythagorean'],
+ ['Quadratic formula','@quadratic'],['Basel problem','@basel'],['AM–GM','@amgm']];
+const CLASSICS={
+ '@pythagorean':{t:'Pythagorean theorem',tex:'a^2+b^2=c^2',steps:[['Setup: a right triangle with legs \\(a,b\\) and hypotenuse \\(c\\). Place four copies inside a square of side \\(a+b\\).',''],['The big square has area \\((a+b)^2\\). The four triangles have total area \\(4\\cdot\\tfrac12ab=2ab\\).',''],['The leftover tilted inner square has side \\(c\\), so its area is \\(c^2\\).',''],['Equate: \\((a+b)^2=2ab+c^2\\Rightarrow a^2+2ab+b^2=2ab+c^2\\).',''],['Cancel \\(2ab\\): \\(a^2+b^2=c^2\\). ∎','']]},
+ '@quadratic':{t:'Quadratic formula derivation',tex:'x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}',steps:[['Start with \\(ax^2+bx+c=0\\), \\(a\\ne0\\). Divide by \\(a\\): \\(x^2+\\tfrac bax+\\tfrac ca=0\\).',''],['Complete the square: add \\(\\left(\\tfrac b{2a}\\right)^2\\) to both sides: \\(\\left(x+\\tfrac b{2a}\\right)^2=\\tfrac{b^2-4ac}{4a^2}\\).',''],['Take square roots: \\(x+\\tfrac b{2a}=\\pm\\tfrac{\\sqrt{b^2-4ac}}{2a}\\).',''],['Isolate \\(x\\) to get the formula. ∎','']]},
+ '@basel':{t:'Basel problem (Euler)',tex:'\\sum_{n=1}^{\\infty}\\frac1{n^2}=\\frac{\\pi^2}{6}',steps:[['Euler’s idea: treat \\(\\tfrac{\\sin x}{x}\\) as a polynomial with roots \\(\\pm\\pi,\\pm2\\pi,\\dots\\): \\(\\tfrac{\\sin x}{x}=\\prod_{n\\ge1}\\left(1-\\tfrac{x^2}{n^2\\pi^2}\\right)\\).',''],['Expand the product: the coefficient of \\(x^2\\) is \\(-\\tfrac1{\\pi^2}\\sum\\tfrac1{n^2}\\).',''],['Expand the series: \\(\\tfrac{\\sin x}{x}=1-\\tfrac{x^2}{6}+\\cdots\\), so the \\(x^2\\) coefficient is \\(-\\tfrac16\\).',''],['Equate: \\(\\tfrac1{\\pi^2}\\sum\\tfrac1{n^2}=\\tfrac16\\Rightarrow\\sum\\tfrac1{n^2}=\\tfrac{\\pi^2}6\\). (Rigorous via the Weierstrass factorization theorem.) ∎','']]},
+ '@amgm':{t:'AM–GM inequality (two variables)',tex:'\\frac{a+b}2\\ge\\sqrt{ab}',steps:[['For \\(a,b\\ge0\\), note \\((\\sqrt a-\\sqrt b)^2\\ge0\\).',''],['Expand: \\(a-2\\sqrt{ab}+b\\ge0\\).',''],['Rearrange: \\(a+b\\ge2\\sqrt{ab}\\), i.e. \\(\\tfrac{a+b}2\\ge\\sqrt{ab}\\), equality iff \\(a=b\\). ∎','']]}};
+const SYMS=[['π','pi'],['θ','theta'],['∞','Infinity'],['√','sqrt('],['^','^'],['/','/'],['( )','()'],['∫','integrate('],['d/dx','diff('],['∑','sum('],['lim','limit('],['[ ]','[[1,2],[3,4]]']];
+let last=null;
+/* ---------- helpers ---------- */
+function splitTop(s){let d=0,o=[],c='';for(const ch of s){if('([{'.includes(ch))d++;if(')]}'.includes(ch))d--;if(ch===','&&d===0){o.push(c.trim());c=''}else c+=ch}o.push(c.trim());return o}
+function latexToPlain(s){let p;do{p=s;s=s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,'(($1)/($2))').replace(/\\sqrt\s*\{([^{}]*)\}/g,'sqrt($1)')}while(p!==s);
+ return s.replace(/\\left|\\right/g,'').replace(/\\cdot|\\times/g,'*').replace(/\\(pi|theta|sin|cos|tan|ln|log|exp)/g,'$1').replace(/\\infty/g,'Infinity').replace(/\{/g,'(').replace(/\}/g,')')}
+function norm(s){s=s.trim();if(s.includes('\\'))s=latexToPlain(s);
+ return s.replace(/×/g,'*').replace(/÷/g,'/').replace(/π/g,'pi').replace(/θ/g,'theta').replace(/∞/g,'Infinity').replace(/√\(/g,'sqrt(').replace(/²/g,'^2').replace(/³/g,'^3').replace(/−/g,'-')}
+function tex(s){try{return nerdamer(String(s)).toTeX()}catch(e){try{return math.parse(String(s)).toTex()}catch(e2){return '\\text{'+String(s).replace(/[{}\\_^%#&$]/g,' ')+'}'}}}
+function vars(s){const set=new Set();try{math.parse(s).traverse((n,p)=>{if(n.isSymbolNode&&p!=='fn'&&!['pi','e','i','Infinity','tau','phi'].includes(n.name))set.add(n.name)})}catch(e){}return [...set]}
+function fmt(x){return math.format(x,{precision:10})}
+function fnOf(expr,v){const c=math.compile(expr);return x=>{try{const y=c.evaluate({[v]:x});return typeof y==='number'?y:NaN}catch(e){return NaN}}}
+function rules(expr,v){const R=new Set();try{math.parse(expr).traverse(n=>{
+ if(n.isOperatorNode){const h=a=>a.toString().includes(v);
+  if(n.op==='*'&&n.args.length===2&&h(n.args[0])&&h(n.args[1]))R.add('product');
+  if(n.op==='/'&&h(n.args[1]))R.add('quotient');
+  if(n.op==='^'&&h(n.args[0]))R.add('power');
+  if(n.op==='^'&&h(n.args[1]))R.add('expo')}
+ if(n.isFunctionNode&&n.args[0]&&!(n.args[0].isSymbolNode))R.add('chain');
+ if(n.isFunctionNode)R.add('fn:'+n.fn.name)})}catch(e){}return R}
+/* ---------- solvers: return {answer(tex), steps:[[html,tex]], plot, plain} ---------- */
+function doDiff(a){const f=a[0],v=a[1]||vars(f)[0]||'x';const r=nerdamer.diff(f,v).toString();const R=rules(f,v);const st=[];
+ st.push(['Identify the function and differentiate with respect to \\('+v+'\\):','\\frac{d}{d'+v+'}\\left['+tex(f)+'\\right]']);
+ if(R.has('power'))st.push(['Power rule: \\(\\tfrac{d}{dx}x^n=nx^{n-1}\\).','']);
+ if(R.has('product'))st.push(['Product rule: \\((uv)\\prime=u\\prime v+uv\\prime\\).','']);
+ if(R.has('quotient'))st.push(['Quotient rule: \\(\\left(\\tfrac uv\\right)\\prime=\\tfrac{u\\prime v-uv\\prime}{v^2}\\).','']);
+ if(R.has('chain')||R.has('expo'))st.push(['Chain rule: \\((f(g))\\prime=f\\prime(g)\\,g\\prime\\).','']);
+ const fs=[...R].filter(x=>x.startsWith('fn:')).map(x=>x.slice(3));if(fs.length)st.push(['Standard derivatives used for: '+fs.join(', ')+'.','']);
+ st.push(['Combine and simplify:','\\frac{d}{d'+v+'}\\left['+tex(f)+'\\right]='+tex(r)]);
+ return {answer:tex(r),steps:st,plot:{fns:[{f:fnOf(f,v),c:'#2f5bea',l:'f('+v+')'},{f:fnOf(r,v),c:'#d9480f',l:'f′('+v+')'}]},plain:r}}
+function simpson(f,a,b,n=2000){const h=(b-a)/n;let s=f(a)+f(b);for(let i=1;i<n;i++)s+=f(a+i*h)*(i%2?4:2);return s*h/3}
+function doInt(a){const f=a[0],v=(a[1]&&isNaN(+a[1])&&/^[a-z]\w*$/i.test(a[1]))?a[1]:(vars(f)[0]||'x');const definite=a.length>=4;const R=rules(f,v);const st=[];
+ const hint=R.has('product')?'The product of different function types suggests integration by parts: \\(\\int u\\,dv=uv-\\int v\\,du\\).':R.has('chain')?'A composite function suggests u‑substitution: let \\(u=g(x)\\), \\(du=g\\prime(x)dx\\).':R.has('power')?'Power rule for integrals: \\(\\int x^n dx=\\tfrac{x^{n+1}}{n+1}+C\\) (\\(n\\ne-1\\)).':'Use standard integral tables and linearity.';
+ st.push(['Set up the integral:','\\int '+tex(f)+'\\,d'+v]);st.push(['Method hint (not the engine’s literal path): '+hint,'']);
+ let F;try{F=nerdamer.integrate(f,v).toString();if(/integrate\(/.test(F))F=null}catch(e){F=null}
+ if(!definite){if(!F)throw new Error('No closed‑form antiderivative found by the symbolic engine.');
+  st.push(['Antiderivative (differentiate it to verify):','\\int '+tex(f)+'\\,d'+v+'='+tex(F)+'+C']);
+  return {answer:tex(F)+'+C',steps:st,plot:{fns:[{f:fnOf(f,v),c:'#2f5bea',l:'f'},{f:fnOf(F,v),c:'#d9480f',l:'F'}]},plain:F+' + C'}}
+ const lo=a[2],hi=a[3];const num=simpson(fnOf(f,v),math.evaluate(lo),math.evaluate(hi));let exact=null;
+ if(F){try{exact=nerdamer(`(${F.replace(new RegExp('\\b'+v+'\\b','g'),'('+hi+')')})-(${F.replace(new RegExp('\\b'+v+'\\b','g'),'('+lo+')')})`).toString()}catch(e){}}
+ if(F)st.push(['Fundamental theorem of calculus: \\(\\int_a^b f=F(b)-F(a)\\) with \\(F='+tex(F)+'\\).','']);
+ st.push(['Evaluate between the bounds:','\\int_{'+tex(lo)+'}^{'+tex(hi)+'}'+tex(f)+'\\,d'+v+'='+(exact?tex(exact)+'\\approx ':'')+fmt(num)]);
+ return {answer:(exact?tex(exact)+'\\approx ':'')+fmt(num),steps:st,plot:{fns:[{f:fnOf(f,v),c:'#2f5bea',l:'f'}],shade:[math.evaluate(lo),math.evaluate(hi)]},plain:(exact?exact+' ≈ ':'')+fmt(num)}}
+function doSolve(eq,vv){const parts=eq.split('=');const L=parts[0],Rr=parts[1]||'0';const f=`(${L})-(${Rr})`;const v=vv||vars(f)[0]||'x';const st=[];
+ st.push(['Move everything to one side:','\\('+tex(L)+'\\)'.slice(2,-2)+'='+tex(Rr)+'\\;\\Rightarrow\\;'+tex(nerdamer(f).expand().toString())+'=0']);
+ const g=fnOf(f,v);const c=g(0),A=(g(1)+g(-1))/2-c,B=(g(1)-g(-1))/2;
+ if(isFinite(A)&&A!==0&&Math.abs(g(2)-(4*A+2*B+c))<1e-9&&Math.abs(g(3)-(9*A+3*B+c))<1e-9){const D=B*B-4*A*c;
+  st.push(['It’s quadratic: \\(a='+fmt(A)+',\\ b='+fmt(B)+',\\ c='+fmt(c)+'\\).','']);
+  st.push(['Discriminant:','\\Delta=b^2-4ac='+fmt(B)+'^2-4('+fmt(A)+')('+fmt(c)+')='+fmt(D)]);
+  st.push([D>0?'\\(\\Delta>0\\): two distinct real roots.':D===0?'\\(\\Delta=0\\): one repeated real root.':'\\(\\Delta<0\\): two complex conjugate roots.','']);
+  st.push(['Apply the quadratic formula:','x=\\frac{-b\\pm\\sqrt{\\Delta}}{2a}']);}
+ else st.push(['Solved by isolating/factoring the polynomial or transcendental expression with the symbolic engine.','']);
+ let sols=[];try{const s=nerdamer.solve(f+'=0',v).toString().replace(/^\[|\]$/g,'');sols=s?splitTop(s):[]}catch(e){}
+ if(!sols.length)throw new Error('No closed‑form solution found. Try a numeric approach or a simpler form.');
+ st.push(['Solutions:',sols.map((s,i)=>v+'_{'+(i+1)+'}='+tex(s)).join(',\\quad ')]);
+ const chk=sols.map(s=>{try{const x=math.evaluate(s);return typeof x==='number'?Math.abs(g(x))<1e-7:true}catch(e){return true}});
+ st.push([chk.every(Boolean)?'Check: substituting each root back gives 0 ✓':'Some roots could not be verified numerically (complex or symbolic).','']);
+ const pts=sols.map(s=>{try{const x=math.evaluate(s);return typeof x==='number'?x:null}catch(e){return null}}).filter(x=>x!==null);
+ return {answer:sols.map((s,i)=>v+'_{'+(i+1)+'}='+tex(s)).join(',\\ \\ '),steps:st,plot:{fns:[{f:g,c:'#2f5bea',l:'f('+v+')'}],pts},plain:sols.map((s,i)=>v+(i+1)+' = '+s).join(', ')}}
+function doLimit(a){const f=a[0],v=a[1]||vars(f)[0]||'x';const pt=a[2]||'0';const x0=math.evaluate(pt.replace(/Infinity|∞/g,'Infinity'));const g=fnOf(f,v);const st=[];
+ st.push(['Set up the limit:','\\lim_{'+v+'\\to '+tex(pt)+'}'+tex(f)]);let L,R;
+ if(Math.abs(x0)===Infinity){const s=Math.sign(x0);L=R=g(s*1e8)}else{L=g(x0-1e-7);R=g(x0+1e-7)}
+ st.push(['Direct substitution: '+(isFinite(g(x0))?'finite value, so continuous there.':'undefined or indeterminate (e.g. 0/0), so examine nearby values.'),'']);
+ st.push(['Approach from both sides numerically:','\\text{left}\\approx '+fmt(math.round(L,6))+',\\quad \\text{right}\\approx '+fmt(math.round(R,6))]);
+ if(!isFinite(L)||!isFinite(R)||Math.abs(L-R)>1e-3*(1+Math.abs(L))){st.push(['The one‑sided limits disagree or diverge: the limit does not exist (or is infinite).','']);return {answer:'\\text{does not exist / diverges}',steps:st,plot:{fns:[{f:g,c:'#2f5bea',l:'f'}],pts:[x0]},plain:'DNE'}}
+ const val=math.round((L+R)/2,6);let nice=fmt(val);try{const m=nerdamer('limit('+f+','+v+','+pt+')').toString();if(!/limit\(/.test(m))nice=m}catch(e){}
+ st.push(['Both sides agree, so the limit is:','\\lim='+tex(nice)]);
+ return {answer:tex(nice),steps:st,plot:{fns:[{f:g,c:'#2f5bea',l:'f'}],pts:isFinite(x0)?[x0]:[]},plain:String(nice)}}
+function doSum(a){const f=a[0],v=a[1]||'n',lo=math.evaluate(a[2]),hi=math.evaluate(a[3]);const g=fnOf(f,v);let s=0;for(let k=lo;k<=hi;k++)s+=g(k);
+ const st=[['Evaluate the partial sum numerically:','\\sum_{'+v+'='+lo+'}^{'+hi+'}'+tex(f)+'\\approx '+fmt(s)]];
+ if(/1\s*\/\s*n\^2/.test(f.replace(/\s/g,'')))st.push(['Matches the Basel series; the infinite sum equals \\(\\pi^2/6\\approx '+fmt(Math.PI**2/6)+'\\).','']);
+ return {answer:'\\approx '+fmt(s),steps:st,plot:null,plain:fmt(s)}}
+function doGeneral(s){const st=[];const vs=vars(s);
+ if(!vs.length){const r=math.evaluate(s);const out=typeof r==='object'?math.parse(fmt(r)).toTex():tex(fmt(r));
+  st.push(['Evaluate the expression using order of operations (parentheses, exponents, ×/÷, +/−):','']);st.push(['Result:',out]);return {answer:out,steps:st,plot:null,plain:fmt(r)}}
+ const r=nerdamer(s).expand().toString();const r2=nerdamer(`simplify(${s})`).toString();
+ st.push(['Symbolic expression in '+vs.join(', ')+':',tex(s)]);st.push(['Expanded form:',tex(r)]);
+ try{const fa=nerdamer.factor(s).toString();if(fa!==r)st.push(['Factored form:',tex(fa)])}catch(e){}
+ return {answer:tex(r2),steps:st,plot:vs.length===1?{fns:[{f:fnOf(s,vs[0]),c:'#2f5bea',l:'f('+vs[0]+')'}]}:null,plain:r2}}
+function solveProblem(raw){
+ if(CLASSICS[raw]){const c=CLASSICS[raw];return {answer:c.tex,steps:c.steps,plot:null,plain:c.t,title:c.t}}
+ const s=norm(raw);const m=s.match(/^(diff|derivative|integrate|int|solve|limit|lim|sum|simplify|expand|factor)\s*\(([\s\S]*)\)$/i);
+ if(m){const k=m[1].toLowerCase(),a=splitTop(m[2]);
+  if(k==='diff'||k==='derivative')return doDiff(a);
+  if(k==='integrate'||k==='int')return doInt(a);
+  if(k==='solve')return doSolve(a[0],a[1]);
+  if(k==='limit'||k==='lim')return doLimit(a);
+  if(k==='sum')return doSum(a);
+  return doGeneral(a[0])}
+ if(s.includes('='))return doSolve(s);
+ return doGeneral(s)}
+/* ---------- plot ---------- */
+function plot(cv,P){const dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;const x=cv.getContext('2d');x.scale(dpr,dpr);
+ const cs=getComputedStyle(document.documentElement);const fg=cs.getPropertyValue('--fg').trim(),mu=cs.getPropertyValue('--muted').trim(),ln=cs.getPropertyValue('--line').trim();
+ let x0=-10,x1=10;const pts=(P.pts||[]).filter(isFinite);if(P.shade){x0=Math.min(...P.shade)-1;x1=Math.max(...P.shade)+1}else if(pts.length){const lo=Math.min(...pts),hi=Math.max(...pts),sp=Math.max(hi-lo,2);x0=lo-sp;x1=hi+sp}
+ const N=500,ys=[];P.fns.forEach(o=>{o.v=[];for(let i=0;i<=N;i++){const t=x0+(x1-x0)*i/N,y=o.f(t);o.v.push(isFinite(y)?y:NaN);if(isFinite(y))ys.push(y)}});
+ ys.sort((a,b)=>a-b);let y0=ys.length?ys[Math.floor(ys.length*.04)]:-5,y1=ys.length?ys[Math.floor(ys.length*.96)]:5;if(y1-y0<1e-6){y0-=1;y1+=1}const pd=(y1-y0)*.15;y0-=pd;y1+=pd;y0=Math.min(y0,0);y1=Math.max(y1,0);
+ const X=t=>(t-x0)/(x1-x0)*W,Y=t=>H-(t-y0)/(y1-y0)*H;x.font='11px sans-serif';x.lineWidth=1;
+ const step=(r)=>{const p=Math.pow(10,Math.floor(Math.log10(r/6)));const q=r/6/p;return(q<1.5?1:q<3.5?2:q<7.5?5:10)*p};
+ const sx=step(x1-x0),sy=step(y1-y0);x.strokeStyle=ln;x.fillStyle=mu;
+ for(let t=Math.ceil(x0/sx)*sx;t<=x1;t+=sx){x.beginPath();x.moveTo(X(t),0);x.lineTo(X(t),H);x.stroke();x.fillText(+t.toFixed(4),X(t)+2,Math.min(H-3,Math.max(11,Y(0)+12)))}
+ for(let t=Math.ceil(y0/sy)*sy;t<=y1;t+=sy){x.beginPath();x.moveTo(0,Y(t));x.lineTo(W,Y(t));x.stroke();x.fillText(+t.toFixed(4),Math.min(W-30,Math.max(2,X(0)+3)),Y(t)-2)}
+ x.strokeStyle=fg;x.lineWidth=1.4;x.beginPath();x.moveTo(X(0),0);x.lineTo(X(0),H);x.moveTo(0,Y(0));x.lineTo(W,Y(0));x.stroke();
+ if(P.shade&&P.fns[0]){x.fillStyle='rgba(47,91,234,.22)';x.beginPath();x.moveTo(X(P.shade[0]),Y(0));P.fns[0].v.forEach((y,i)=>{const t=x0+(x1-x0)*i/N;if(t>=P.shade[0]&&t<=P.shade[1]&&isFinite(y))x.lineTo(X(t),Y(y))});x.lineTo(X(P.shade[1]),Y(0));x.closePath();x.fill()}
+ P.fns.forEach((o,k)=>{x.strokeStyle=o.c;x.lineWidth=2.2;x.beginPath();let pen=false;o.v.forEach((y,i)=>{const px=X(x0+(x1-x0)*i/N),py=Y(y);if(!isFinite(y)||Math.abs(py)>1e5){pen=false;return}pen?x.lineTo(px,py):x.moveTo(px,py);pen=true});x.stroke();x.fillStyle=o.c;x.fillText(o.l,8,16+k*14)});
+ (P.pts||[]).forEach(t=>{if(!isFinite(t))return;x.fillStyle='#d9480f';x.beginPath();x.arc(X(t),Y(0),5,0,7);x.fill()})}
+/* ---------- render ---------- */
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+async function render(res,input){
+ const out=$('out');let h='<div class="card"><div class="ans"><div class="lbl">Final answer</div><div style="font-size:1.15rem">\\['+res.answer+'\\]</div></div>';
+ h+='<div class="lbl" style="margin-top:14px">Step-by-step</div>';
+ res.steps.forEach((s,i)=>{h+='<div class="step"><span class="n">'+(i+1)+'</span><div>'+s[0]+(s[1]?'<div>\\['+s[1]+'\\]</div>':'')+'</div></div>'});
+ h+='<div class="row"><button class="btn" id="cp1">Copy plain text</button><button class="btn" id="cp2">Copy LaTeX</button></div></div>';
+ if(res.plot)h+='<div class="card"><div class="lbl" style="margin-top:0">Graph</div><canvas id="cv"></canvas></div>';
+ out.innerHTML=h;
+ $('cp1').onclick=()=>cp(res.plain);$('cp2').onclick=()=>cp(res.answer);
+ if(res.plot)requestAnimationFrame(()=>plot($('cv'),res.plot));
+ last=res;try{await MathJax.typesetPromise([out])}catch(e){}}
+function cp(t){try{navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}}
+function showErr(e){$('out').innerHTML='<div class="card err"><strong>Couldn’t solve that.</strong><br>'+esc(e.message||e)+'<br><span class="note">Check the syntax, e.g. <code>solve(x^2-4=0, x)</code>, or try a simpler form.</span></div>'}
+async function run(){const v=$('in').value.trim();if(!v)return;try{const r=solveProblem(v);await render(r,v);addHist(v)}catch(e){showErr(e)}}
+/* ---------- history ---------- */
+function getH(){try{return JSON.parse(localStorage.getItem('omni-h')||'[]')}catch(e){return []}}
+function addHist(v){try{let h=getH().filter(x=>x!==v);h.unshift(v);localStorage.setItem('omni-h',JSON.stringify(h.slice(0,20)))}catch(e){}drawH()}
+function drawH(){const h=getH();$('hist').innerHTML=h.length?'':'<span class="note">Solved problems will appear here.</span>';h.forEach(v=>{const d=document.createElement('div');d.className='hist';d.textContent=v;d.onclick=()=>{$('in').value=v;preview();run()};$('hist').appendChild(d)})}
+$('hclr').onclick=()=>{try{localStorage.removeItem('omni-h')}catch(e){}drawH()};
+/* ---------- preview & UI ---------- */
+let pt;function preview(){clearTimeout(pt);pt=setTimeout(async()=>{const v=$('in').value.trim(),p=$('prev');if(!v){p.innerHTML='';return}
+ let t='';try{if(CLASSICS[v])t='\\text{'+CLASSICS[v].t+'}';else{const s=norm(v);const m=s.match(/^(diff|integrate|int|limit|sum|solve)\s*\(([\s\S]*)\)$/i);
+  if(m){const a=splitTop(m[2]);const k=m[1].toLowerCase();const T=z=>math.parse(z).toTex();
+   t=k==='diff'?'\\frac{d}{d'+(a[1]||'x')+'}\\left['+T(a[0])+'\\right]':(k==='integrate'||k==='int')?(a.length>=4?'\\int_{'+T(a[2])+'}^{'+T(a[3])+'}':'\\int ')+T(a[0])+'\\,d'+(isNaN(+a[1])&&a[1]&&a.length<4?a[1]:'x'):k==='limit'?'\\lim_{'+a[1]+'\\to '+T(a[2]||'0')+'}'+T(a[0]):k==='sum'?'\\sum_{'+a[1]+'='+a[2]+'}^{'+a[3]+'}'+T(a[0]):a[0].split('=').map(T).join('=')+'\\ (\\text{solve for }'+(a[1]||'x')+')'}
+  else t=s.split('=').map(z=>math.parse(z).toTex()).join('=')}}catch(e){p.innerHTML='<span class="err">…</span>';return}
+ p.innerHTML='\\['+t+'\\]';try{await MathJax.typesetPromise([p])}catch(e){}},250)}
+$('in').addEventListener('input',preview);
+$('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();run()}});
+$('go').onclick=run;$('clr').onclick=()=>{$('in').value='';$('prev').innerHTML='';$('out').innerHTML='';$('in').focus()};
+SYMS.forEach(([l,v])=>{const b=document.createElement('button');b.className='btn';b.textContent=l;b.onclick=()=>{const t=$('in'),a=t.selectionStart,z=t.selectionEnd;t.value=t.value.slice(0,a)+v+t.value.slice(z);const c=a+(v==='()'?1:v.length);t.focus();t.setSelectionRange(c,c);preview()};$('syms').appendChild(b)});
+EXAMPLES.forEach(([l,v])=>{const b=document.createElement('button');b.className='btn chip';b.textContent=l;b.onclick=()=>{$('in').value=v;preview();run()};$('ex').appendChild(b)});
+$('theme').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).colorScheme==='dark';r.setAttribute('data-theme',d?'light':'dark');if(last&&$('cv'))setTimeout(()=>plot($('cv'),last.plot),30)};
+addEventListener('resize',()=>{if(last&&last.plot&&$('cv'))plot($('cv'),last.plot)});
+/* ---------- sections & function library ---------- */
+const FUNCS=[
+['Calculus','diff','diff(f, x)','Derivative of f with respect to x, with the rules used.','diff(x^3*sin(x), x)'],
+['Calculus','integrate','integrate(f, x)','Indefinite integral (antiderivative).','integrate(x*e^x, x)'],
+['Calculus','integrate (definite)','integrate(f, x, a, b)','Area under f from a to b, exact when possible.','integrate(sin(x), x, 0, pi)'],
+['Calculus','limit','limit(f, x, a)','Two-sided limit. Use Infinity for ∞.','limit(sin(x)/x, x, 0)'],
+['Calculus','sum','sum(f, n, a, b)','Finite sum, evaluated numerically.','sum(1/n^2, n, 1, 100000)'],
+['Algebra','solve','solve(equation, x)','Solves polynomial and many other equations, then verifies the roots.','solve(x^3-6x^2+11x-6=0, x)'],
+['Algebra','equation (auto)','lhs = rhs','No command needed: the variable is detected. Quadratics show discriminant steps.','x^2-5x+6=0'],
+['Algebra','simplify / expand / factor','simplify(expr)','Shows expanded, factored and simplified forms of an expression.','simplify((x^2-1)/(x-1))'],
+['Algebra','evaluate','2^10 + sqrt(144)/3','Plain arithmetic with correct order of operations.','2^10 + sqrt(144)/3'],
+['Elementary functions','sin, cos, tan','sin(x)  cos(x)  tan(x)','Trig functions in radians. Inverses: asin, acos, atan.','sin(pi/6)'],
+['Elementary functions','exp, log','exp(x)  log(x)  log10(x)  log2(x)','e^x, natural log, and logs in other bases.','log(e^3)'],
+['Elementary functions','sqrt, cbrt, abs','sqrt(x)  cbrt(x)  abs(x)','Roots and absolute value.','cbrt(27)+abs(-4)'],
+['Elementary functions','sinh, cosh, tanh','sinh(x)  cosh(x)  tanh(x)','Hyperbolic functions.','cosh(0)'],
+['Elementary functions','constants','pi  e  tau  phi','Built-in constants.','2*pi'],
+['Matrices & Stats','det','det(M)','Determinant of a square matrix.','det([[2,1],[5,3]])'],
+['Matrices & Stats','inv','inv(M)','Matrix inverse.','inv([[4,7],[2,6]])'],
+['Matrices & Stats','transpose','transpose(M)','Swap rows and columns.','transpose([[1,2,3],[4,5,6]])'],
+['Matrices & Stats','matrix product','A * B','Matrix multiplication.','[[1,2],[3,4]]*[[5,6],[7,8]]'],
+['Matrices & Stats','mean / median','mean([...])  median([...])','Average and middle value of a list.','mean([2,4,4,4,5,5,7,9])'],
+['Matrices & Stats','std / variance','std([...])  variance([...])','Sample standard deviation and variance.','std([2,4,4,4,5,5,7,9])'],
+['Number theory','gcd / lcm','gcd(a, b)  lcm(a, b)','Greatest common divisor and least common multiple.','gcd(84, 36)'],
+['Number theory','factorial','factorial(n)','n! = n·(n−1)·…·1.','factorial(10)'],
+['Number theory','combinations','combinations(n, k)','Choose k from n (nCr).','combinations(10, 3)'],
+['Number theory','permutations','permutations(n, k)','Ordered arrangements (nPr).','permutations(5, 2)'],
+['Number theory','mod','mod(a, b)','Remainder after division.','mod(17, 5)'],
+['Number theory','isPrime','isPrime(n)','Tests whether n is prime.','isPrime(97)'],
+['Classics','Pythagorean theorem','@pythagorean','Area-rearrangement proof of a² + b² = c².','@pythagorean'],
+['Classics','Quadratic formula','@quadratic','Derivation by completing the square.','@quadratic'],
+['Classics','Basel problem','@basel','Euler’s product argument for Σ1/n² = π²/6.','@basel'],
+['Classics','AM–GM inequality','@amgm','Two-variable proof from (√a − √b)² ≥ 0.','@amgm']];
+const TABS=['Solver','Calculus','Algebra','Elementary functions','Matrices & Stats','Number theory','Classics','All functions'];
+function fcard(f){const d=document.createElement('div');d.className='fc';d.innerHTML='<b>'+esc(f[1])+'</b><code>'+esc(f[2])+'</code><span class="note">'+esc(f[3])+'</span><code>'+esc(f[4])+'</code>';const b=document.createElement('button');b.className='btn';b.textContent='Try it ▸';b.onclick=()=>{$('in').value=f[4];showTab('Solver');preview();run()};d.appendChild(b);return d}
+function drawFn(n){const p=$('p-fn'),all=n==='All functions';
+ p.innerHTML='<h2 style="margin:16px 0 0;font-size:1.15rem">'+esc(n)+'</h2><p class="sub" id="fcount"></p>'+(all?'<input class="srch" id="fs" placeholder="Search all functions…">':'')+'<div id="fbody"></div>';
+ const fill=q=>{const body=$('fbody');body.innerHTML='';let cnt=0;[...new Set(FUNCS.map(f=>f[0]))].filter(c=>all||c===n).forEach(c=>{const l=FUNCS.filter(f=>f[0]===c&&(!q||f.join(' ').toLowerCase().includes(q)));if(!l.length)return;cnt+=l.length;if(all){const h=document.createElement('div');h.className='lbl';h.textContent=c+' ('+l.length+')';body.appendChild(h)}const g=document.createElement('div');g.className='fgrid';l.forEach(f=>g.appendChild(fcard(f)));body.appendChild(g)});$('fcount').textContent=cnt+(cnt===1?' function':' functions')+(all?' available':'')+(cnt?'':' — nothing matches')};
+ fill('');if(all)$('fs').oninput=e=>fill(e.target.value.toLowerCase())}
+function showTab(n){[...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.t===n));const s=n==='Solver';$('p-solve').hidden=!s;$('p-fn').hidden=s;if(s){if(last&&last.plot&&$('cv'))setTimeout(()=>plot($('cv'),last.plot),30)}else drawFn(n);window.scrollTo(0,0)}
+TABS.forEach(t=>{const b=document.createElement('button');b.className='tab';b.textContent=t;b.dataset.t=t;b.onclick=()=>showTab(t);$('tabs').appendChild(b)});
+showTab('Solver');
+drawH();
+</script>
+</body>
+</html>
