@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="OmniMath Solver — symbolic and numerical mathematics for engineering students.">
+<title>OmniMath Solver | Mathematics Workbench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+<style>
+:root{--bg:#f3f6fc;--panel:#fff;--soft:#f7f9fd;--ink:#17243b;--muted:#64748b;--line:#e2e8f0;--blue:#3659d9;--blue2:#eaf0ff;--green:#087f5b;--red:#c92a2a;--shadow:0 12px 34px #1e31500c}
+[data-theme=dark]{--bg:#0c1422;--panel:#131f31;--soft:#1a2a40;--ink:#edf3ff;--muted:#a2b2c9;--line:#2b3c55;--blue:#91aaff;--blue2:#233456;--green:#4bd4a4;--red:#ff8585;--shadow:0 12px 34px #0003;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px 'DM Sans',sans-serif;line-height:1.55}.shell{max-width:1120px;margin:auto;padding:24px 18px 60px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:5px 0 20px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:13px}.mark{width:48px;height:48px;border-radius:15px;background:linear-gradient(140deg,#3158d9,#8666e8);display:grid;place-items:center;color:white;font-size:27px;font-weight:700}.brand h1{margin:0;font-size:1.5rem;letter-spacing:-.04em}.brand h1 span{color:var(--blue)}.tag{font-size:.86rem;color:var(--muted)}.header-actions,.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.status{font-size:.8rem;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706;margin-right:6px}.dot.ready{background:#0ca678}.dot.bad{background:#e03131}.card{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:19px;margin-top:17px;box-shadow:var(--shadow)}.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin:17px 0 8px}.section-title:first-child{margin-top:0}textarea{display:block;width:100%;min-height:104px;resize:vertical;padding:15px;border-radius:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:15px 'JetBrains Mono',monospace;line-height:1.6}textarea:focus{outline:2px solid var(--blue);border-color:transparent}.preview{min-height:42px;border:1px dashed var(--line);border-radius:10px;background:var(--soft);padding:9px 12px;overflow:auto}.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 13px;font:600 .88rem 'DM Sans';cursor:pointer;transition:.15s}.btn:hover{border-color:var(--blue);background:var(--blue2)}.primary{background:var(--blue);color:white;border-color:var(--blue)}.primary:hover{filter:brightness(1.08);color:white}.soft{background:var(--blue2);color:var(--blue);border-color:transparent}.keypad{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:7px}.keypad .btn{font: .87rem 'JetBrains Mono';padding:10px 4px}.examples{display:flex;flex-wrap:wrap;gap:7px}.hint{font-size:.82rem;color:var(--muted)}.result{padding:16px;border:1px solid var(--green);background:color-mix(in srgb,var(--green) 7%,var(--panel));border-radius:12px;overflow:auto;font-size:1.12rem}.step{padding:13px 0;border-top:1px solid var(--line);display:flex;gap:12px}.step:first-child{border-top:0}.num{flex:none;width:25px;height:25px;border-radius:8px;background:var(--blue2);color:var(--blue);display:grid;place-items:center;font-size:.78rem;font-weight:700}.step-body{min-width:0;overflow:auto}.error{border:1px solid var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--panel));padding:13px;border-radius:11px}.history-item{padding:10px 4px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;cursor:pointer;font: .84rem 'JetBrains Mono';overflow-wrap:anywhere}.history-item:hover{background:var(--blue2)}.pill{font-size:.72rem;padding:3px 8px;border-radius:20px;background:var(--blue2);color:var(--blue);font-weight:700}.footer{color:var(--muted);font-size:.78rem;text-align:center;padding:24px 5px}@media(max-width:640px){.shell{padding:13px 10px 40px}.card{padding:14px}.brand h1{font-size:1.25rem}.tag{font-size:.76rem}header{align-items:flex-start}.status{max-width:120px}}
+</style></head>
+<body><main class="shell">
+<header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic & numerical methods</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
+<section class="card">
+<div class="section-title">Enter a mathematical expression</div>
+<textarea id="input" spellcheck="false" placeholder="Examples:&#10;integrate(exp(x)*(1+sin(x))/(1+cos(x)), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
+<div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
+<div class="section-title">Quick operations</div><div id="operations" class="row"></div>
+<div class="section-title">Scientific keypad</div><div id="keypad" class="keypad"></div>
+<div class="row" style="margin-top:14px"><button class="btn primary" id="calculate">Solve expression ↗</button><button class="btn" id="clear">Clear</button><button class="btn" id="backspace">⌫ Backspace</button><button class="btn" id="copy">Copy answer</button></div>
+<div class="section-title">Try a sample problem</div><div id="examples" class="examples"></div>
+<p class="hint">Use ^ for powers; multiplication such as 2x is supported. Trigonometric functions use radians. Use sin(30*pi/180) for degrees. Variables are treated symbolically where appropriate.</p>
+</section>
+<div id="output" aria-live="polite"></div>
+<section class="card"><div class="row" style="justify-content:space-between"><b>Calculation history</b><button class="btn" id="clearHistory">Clear history</button></div><div id="history"><p class="hint">Your recent calculations will appear here.</p></div></section>
+<div class="footer">OmniMath Solver · Built for learning, exploration and engineering mathematics</div>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);let py=null,engineReady=false,lastAnswer='',history=[];
+const samples=[
+['Definite integral','integrate(sin(x), x, 0, pi)'],
+['Advanced integral','integrate(exp(x)*(1+sin(x))/(1+cos(x)), x)'],
+['Derivative','diff(x^3*sin(x), x)'],
+['Partial derivative','diff(x^2*y + sin(x*y), x)'],
+['Equation','solve(x^2 - 5*x + 6 = 0, x)'],
+['Limit','limit(sin(x)/x, x, 0)'],
+['Taylor series','series(exp(x), x, 0, 6)'],
+['Matrix determinant','det([[2,1],[5,3]])'],
+['Matrix inverse','inv([[2,1],[5,3]])'],
+['Simplify','simplify((x^2-1)/(x-1))'],
+['Factor','factor(x^3 - 6*x^2 + 11*x - 6)']
+];
+const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
+const operations=[['d/dx','diff('],['∂ partial','diff('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
+const pythonCode = String.raw`
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor, function_exponentiation
+from sympy import *
+x,y,z,t,s,a,b,c,n = sp.symbols('x y z t s a b c n')
+TRANS = standard_transformations + (implicit_multiplication_application, convert_xor, function_exponentiation)
+LOCALS = {k:getattr(sp,k) for k in dir(sp) if not k.startswith('_')}
+LOCALS.update({'pi':sp.pi,'e':sp.E,'ln':sp.log,'log10':lambda q:sp.log(q,10),'Ans':sp.Integer(0)})
+def P(q):
+    q=q.strip()
+    if not q: raise ValueError("Enter an expression.")
+    return parse_expr(q, local_dict=LOCALS, transformations=TRANS, evaluate=True)
+def latex(q): return sp.latex(q)
+def run(q):
+    q=q.strip()
+    # command forms
+    m=sp.re.match(r'^(diff|integrate|solve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,sp.S)
+    if m:
+        op=m.group(1); body=m.group(2)
+        # split top-level comma arguments
+        args=[]; depth=0; start=0
+        for i,ch in enumerate(body):
+            if ch in '([': depth+=1
+            elif ch in ')]': depth-=1
+            elif ch==',' and depth==0: args.append(body[start:i].strip()); start=i+1
+        args.append(body[start:].strip())
+        if op=='diff':
+            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
+            ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans, [('Input function',f),('Differentiation variable',v),('Derivative',ans)])
+        if op=='integrate':
+            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
+            if len(args)>=4:
+                lo,hi=P(args[2]),P(args[3]); ans=sp.integrate(f,(v,lo,hi))
+                return ('Definite integral',ans,[('Integrand',f),('Bounds',sp.Tuple(lo,hi)),('Exact evaluation',ans)])
+            ans=sp.integrate(f,v)
+            return ('Indefinite integral',ans,[('Integrand',f),('Antiderivative',ans),('Constant of integration',sp.Symbol('C'))])
+        if op=='solve':
+            eq=args[0]
+            if '=' in eq:
+                L,R=eq.split('=',1); expr=P(L)-P(R)
+            else: expr=P(eq)
+            v=P(args[1]) if len(args)>1 else next(iter(expr.free_symbols),x)
+            ans=sp.solve(expr,v)
+            return ('Solve for '+str(v),ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
+        if op=='limit':
+            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0
+            ans=sp.limit(f,v,point); return ('Limit',ans,[('Expression',f),('Approach value',point),('Limit',ans)])
+        if op=='series':
+            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0; order=int(args[3]) if len(args)>3 else 6
+            ans=sp.series(f,v,point,n=order); return ('Taylor series',ans,[('Function',f),('Expansion point',point),('Series',ans)])
+        if op in ('simplify','factor','expand'):
+            f=P(args[0]); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
+        if op in ('det','inv','rank','eigenvals'):
+            M=P(args[0])
+            if op=='det': ans=M.det()
+            elif op=='inv': ans=M.inv()
+            elif op=='rank': ans=M.rank()
+            else: ans=M.eigenvals()
+            return ('Matrix '+op,ans,[('Input matrix',M),('Result',ans)])
+        if op=='grad':
+            f=P(args[0]); vs=[P(vv) for vv in args[1:]] or sorted(f.free_symbols,key=str)
+            ans=sp.Matrix([sp.diff(f,vv) for vv in vs]); return ('Gradient',ans,[('Function',f),('Variables',sp.Tuple(*vs)),('Gradient vector',ans)])
+    if '=' in q:
+        L,R=q.split('=',1); expr=P(L)-P(R); v=sorted(expr.free_symbols,key=str)[0] if expr.free_symbols else x
+        ans=sp.solve(expr,v); return ('Equation solution',ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
+    ans=P(q)
+    if ans.free_symbols: ans=sp.simplify(ans)
+    return ('Evaluation / simplification',ans,[('Parsed expression',P(q)),('Result',ans)])
+def answer(q):
+    title,ans,steps=run(q)
+    return {'title':title,'latex':latex(ans),'plain':str(ans),'steps':[{'label':str(k),'latex':latex(v)} for k,v in steps]}
+`;
+async function boot(){
+ try{
+  $('engineStatus').textContent='Loading SymPy engine…';
+  py=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/'});
+  await py.loadPackage('sympy');
+  await py.runPythonAsync(pythonCode);
+  engineReady=true;$('engineStatus').textContent='SymPy symbolic engine ready';$('engineDot').className='dot ready';
+ }catch(e){$('engineStatus').textContent='Engine unavailable — check internet';$('engineDot').className='dot bad';console.error(e)}
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
+function preview(){const q=$('input').value.trim();$('preview').textContent=q?'\\('+q+'\\)':'';if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{})}
+function render(data,q){
+ lastAnswer=data.plain;
+ let html='<section class="card"><div class="row" style="justify-content:space-between"><div class="section-title" style="margin:0">Result</div><span class="pill">'+esc(data.title)+'</span></div><div class="result">\\['+data.latex+'\\]</div><div class="section-title">Mathematical working</div>';
+ data.steps.forEach((s,i)=>{html+='<div class="step"><div class="num">'+(i+1)+'</div><div class="step-body"><b>'+esc(s.label)+'</b><div>\\['+s.latex+'\\]</div></div></div>'});
+ html+='</section>';$('output').innerHTML=html;
+ if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('output')]).catch(()=>{});
+ history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);drawHistory();
+}
+async function calculate(qOverride){
+ const q=(qOverride??$('input').value).trim();if(!q)return;
+ if(!engineReady){$('output').innerHTML='<section class="card error">The symbolic mathematics engine is still loading. Please wait until the status says “SymPy symbolic engine ready”.</section>';return}
+ $('output').innerHTML='<section class="card"><span class="dot ready"></span> Calculating symbolically…</section>';
+ try{
+  py.globals.set('USER_EXPRESSION',q);
+  const obj=await py.runPythonAsync("answer(USER_EXPRESSION)");
+  const data=obj.toJs({dict_converter:Object.fromEntries});obj.destroy();
+  render(data,q);
+ }catch(e){$('output').innerHTML='<section class="card error"><b>Could not evaluate this input.</b><div>'+esc(String(e).replace(/^PythonError:s*/,'').slice(0,700))+'</div><p class="hint">Check the syntax and variable names. Supported commands include diff, integrate, solve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></section>'}
+}
+function drawHistory(){
+ $('history').innerHTML=history.length?history.map((h,i)=>'<div class="history-item" data-i="'+i+'"><span>'+esc(h.q)+'</span><span class="hint">'+esc(h.answer.slice(0,65))+'</span></div>').join(''):'<p class="hint">Your recent calculations will appear here.</p>';
+ $('history').querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{$('input').value=history[+el.dataset.i].q;preview();calculate()});
+}
+function init(){
+ $('calculate').onclick=()=>calculate();$('input').addEventListener('input',preview);
+ $('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();calculate()}});
+ $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='';preview()};
+ $('backspace').onclick=()=>{const t=$('input'),a=t.selectionStart,b=t.selectionEnd;if(a===b&&a>0)t.setRangeText('',a-1,b,'end');else t.setRangeText('',a,b,'end');preview();t.focus()};
+ $('themeBtn').onclick=()=>document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';
+ $('clearHistory').onclick=()=>{history=[];drawHistory()};
+ $('copy').onclick=()=>{if(lastAnswer)navigator.clipboard?.writeText(lastAnswer)};
+ keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
+ operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
+ samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();calculate()};$('examples').append(b)});
+ drawHistory();boot();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script></body></html>
