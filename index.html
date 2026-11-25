@@ -25,7 +25,7 @@
 <div class="section-title">Try a sample problem</div><div id="examples" class="examples"></div>
 <p class="hint">Use ^ for powers; multiplication such as 2x is supported. Trigonometric functions use radians. Use sin(30*pi/180) for degrees. Variables are treated symbolically where appropriate.</p>
 </section>
-<div id="output" aria-live="polite"></div>
+<div id="output" aria-live="polite"><section class="card"><div class="row" style="justify-content:space-between"><b>Solution &amp; working</b><span class="pill">Ready</span></div><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section></div>
 <section class="card"><div class="row" style="justify-content:space-between"><b>Calculation history</b><button class="btn" id="clearHistory">Clear history</button></div><div id="history"><p class="hint">Your recent calculations will appear here.</p></div></section>
 <div class="footer">OmniMath Solver · Built for learning, exploration and engineering mathematics</div>
 </main>
@@ -168,6 +168,24 @@ async function boot(){
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
 function preview(){const q=$('input').value.trim();$('preview').textContent=q?'\\('+q+'\\)':'';if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{})}
+async function calculate(qOverride){
+ const q=(qOverride!==undefined?qOverride:$('input').value).trim();
+ if(!q){$('output').innerHTML='<section class="card error">Enter a mathematical expression first.</section>';return}
+ if(!engineReady){$('output').innerHTML='<section class="card error"><b>Mathematics engine is not ready.</b><p class="hint">Wait until the top status says “SymPy symbolic engine ready”. If it says unavailable, check your internet connection and reload.</p></section>';return}
+ $('output').innerHTML='<section class="card"><div class="row"><span class="dot ready"></span><b>Calculating symbolically…</b></div><p class="hint">Please wait while the mathematics engine works.</p></section>';
+ $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
+ try{
+  py.globals.set('USER_EXPRESSION',q);
+  const obj=await py.runPythonAsync('answer(USER_EXPRESSION)');
+  const data=obj.toJs({dict_converter:Object.fromEntries});
+  obj.destroy();
+  render(data,q);
+  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
+ }catch(e){
+  $('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc(String(e).replace(/^PythonError:\\s*/,'').slice(0,700))+'</div><p class="hint">Check the expression syntax. Supported commands include diff, integrate, solve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></div></section>';
+  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
+ }
+}
 function render(data,q){
  lastAnswer=data.plain;
  const notSolved=data.title.includes('no antiderivative found');
@@ -186,7 +204,7 @@ function drawHistory(){
 function init(){
  $('calculate').onclick=()=>calculate();$('input').addEventListener('input',preview);
  $('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();calculate()}});
- $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='';preview()};
+ $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='<section class="card"><b>Solution &amp; working</b><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section>';preview()};
  $('backspace').onclick=()=>{const t=$('input'),a=t.selectionStart,b=t.selectionEnd;if(a===b&&a>0)t.setRangeText('',a-1,b,'end');else t.setRangeText('',a,b,'end');preview();t.focus()};
  $('themeBtn').onclick=()=>document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';
  $('clearHistory').onclick=()=>{history=[];drawHistory()};
