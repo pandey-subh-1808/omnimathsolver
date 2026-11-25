@@ -64,7 +64,7 @@ def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
     # command forms
-    m=re.match(r'^(diff|integrate|solve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,sp.S)
+    m=re.match(r'^(diff|integrate|solve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,re.S)
     if m:
         op=m.group(1); body=m.group(2)
         # split top-level comma arguments
