@@ -48,7 +48,7 @@ const samples=[
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
 const operations=[['d/dx','diff('],['∂ partial','diff('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
 const pythonCode = String.raw`
-import re
+import re as regex
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor, function_exponentiation
 from sympy import *
@@ -64,7 +64,7 @@ def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
     # command forms
-    m=re.match(r'^(diff|integrate|solve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,re.S)
+    m=regex.match(r'^(diff|integrate|solve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
     if m:
         op=m.group(1); body=m.group(2)
         # split top-level comma arguments
