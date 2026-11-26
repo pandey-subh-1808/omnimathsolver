@@ -11,13 +11,13 @@
 <style>
 :root{--bg:#f3f6fc;--panel:#fff;--soft:#f7f9fd;--ink:#17243b;--muted:#64748b;--line:#e2e8f0;--blue:#3659d9;--blue2:#eaf0ff;--green:#087f5b;--red:#c92a2a;--shadow:0 12px 34px #1e31500c}
 [data-theme=dark]{--bg:#0c1422;--panel:#131f31;--soft:#1a2a40;--ink:#edf3ff;--muted:#a2b2c9;--line:#2b3c55;--blue:#91aaff;--blue2:#233456;--green:#4bd4a4;--red:#ff8585;--shadow:0 12px 34px #0003;color-scheme:dark}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px 'DM Sans',sans-serif;line-height:1.55}.shell{max-width:1120px;margin:auto;padding:24px 18px 60px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:5px 0 20px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:13px}.mark{width:48px;height:48px;border-radius:15px;background:linear-gradient(140deg,#3158d9,#8666e8);display:grid;place-items:center;color:white;font-size:27px;font-weight:700}.brand h1{margin:0;font-size:1.5rem;letter-spacing:-.04em}.brand h1 span{color:var(--blue)}.tag{font-size:.86rem;color:var(--muted)}.header-actions,.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.status{font-size:.8rem;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706;margin-right:6px}.dot.ready{background:#0ca678}.dot.bad{background:#e03131}.card{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:19px;margin-top:17px;box-shadow:var(--shadow)}.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin:17px 0 8px}.section-title:first-child{margin-top:0}textarea{display:block;width:100%;min-height:104px;resize:vertical;padding:15px;border-radius:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:15px 'JetBrains Mono',monospace;line-height:1.6}textarea:focus{outline:2px solid var(--blue);border-color:transparent}.preview{min-height:42px;border:1px dashed var(--line);border-radius:10px;background:var(--soft);padding:9px 12px;overflow:auto}.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 13px;font:600 .88rem 'DM Sans';cursor:pointer;transition:.15s}.btn:hover{border-color:var(--blue);background:var(--blue2)}.primary{background:var(--blue);color:white;border-color:var(--blue)}.primary:hover{filter:brightness(1.08);color:white}.soft{background:var(--blue2);color:var(--blue);border-color:transparent}.keypad{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:7px}.keypad .btn{font: .87rem 'JetBrains Mono';padding:10px 4px}.examples{display:flex;flex-wrap:wrap;gap:7px}.hint{font-size:.82rem;color:var(--muted)}.result{padding:16px;border:1px solid var(--green);background:color-mix(in srgb,var(--green) 7%,var(--panel));border-radius:12px;overflow:auto;font-size:1.12rem}.result.unresolved{border-color:var(--red);background:color-mix(in srgb,var(--red) 5%,var(--panel))}.step{padding:13px 0;border-top:1px solid var(--line);display:flex;gap:12px}.step:first-child{border-top:0}.num{flex:none;width:25px;height:25px;border-radius:8px;background:var(--blue2);color:var(--blue);display:grid;place-items:center;font-size:.78rem;font-weight:700}.step-body{min-width:0;overflow:auto}.error{border:1px solid var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--panel));padding:13px;border-radius:11px}.history-item{padding:10px 4px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;cursor:pointer;font: .84rem 'JetBrains Mono';overflow-wrap:anywhere}.history-item:hover{background:var(--blue2)}.pill{font-size:.72rem;padding:3px 8px;border-radius:20px;background:var(--blue2);color:var(--blue);font-weight:700}.footer{color:var(--muted);font-size:.78rem;text-align:center;padding:24px 5px}@media(max-width:640px){.shell{padding:13px 10px 40px}.card{padding:14px}.brand h1{font-size:1.25rem}.tag{font-size:.76rem}header{align-items:flex-start}.status{max-width:120px}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 12% 0%,color-mix(in srgb,var(--blue) 7%,var(--bg)),transparent 38%),var(--bg);color:var(--ink);font:15px 'DM Sans',sans-serif;line-height:1.55}.shell{max-width:1120px;margin:auto;padding:24px 18px 60px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:5px 0 20px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:13px}.mark{width:48px;height:48px;border-radius:15px;background:linear-gradient(140deg,#3158d9,#8666e8);display:grid;place-items:center;color:white;font-size:27px;font-weight:700}.brand h1{margin:0;font-size:1.5rem;letter-spacing:-.04em}.brand h1 span{color:var(--blue)}.tag{font-size:.86rem;color:var(--muted)}.header-actions,.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.status{font-size:.8rem;color:var(--muted)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706;margin-right:6px}.dot.ready{background:#0ca678}.dot.bad{background:#e03131}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:17px;box-shadow:var(--shadow);transition:border-color .2s,transform .2s,box-shadow .2s}.card:hover{border-color:color-mix(in srgb,var(--blue) 38%,var(--line));box-shadow:0 16px 38px #1e315014}.card:focus-within{border-color:var(--blue)}.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin:17px 0 8px}.section-title:first-child{margin-top:0}textarea{display:block;width:100%;min-height:104px;resize:vertical;padding:15px;border-radius:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:15px 'JetBrains Mono',monospace;line-height:1.6}textarea:focus{outline:2px solid var(--blue);border-color:transparent}.preview{min-height:42px;border:1px dashed var(--line);border-radius:10px;background:var(--soft);padding:9px 12px;overflow:auto}.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 13px;font:600 .88rem 'DM Sans';cursor:pointer;transition:.15s}.btn:hover{border-color:var(--blue);background:var(--blue2);transform:translateY(-1px)}.btn:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 38%,transparent);outline-offset:2px}.primary{background:var(--blue);color:white;border-color:var(--blue)}.primary:hover{filter:brightness(1.08);color:white}.soft{background:var(--blue2);color:var(--blue);border-color:transparent}.keypad{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:7px}.keypad .btn{font: .87rem 'JetBrains Mono';padding:10px 4px}.examples{display:flex;flex-wrap:wrap;gap:7px}.hint{font-size:.82rem;color:var(--muted)}.result{padding:16px;border:1px solid var(--green);background:color-mix(in srgb,var(--green) 7%,var(--panel));border-radius:12px;overflow:auto;font-size:1.12rem}.result.unresolved{border-color:var(--red);background:color-mix(in srgb,var(--red) 5%,var(--panel))}.step{padding:13px 0;border-top:1px solid var(--line);display:flex;gap:12px}.step:first-child{border-top:0}.num{flex:none;width:25px;height:25px;border-radius:8px;background:var(--blue2);color:var(--blue);display:grid;place-items:center;font-size:.78rem;font-weight:700}.step-body{min-width:0;overflow:auto}.error{border:1px solid var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--panel));padding:13px;border-radius:11px}.history-item{padding:10px 4px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;cursor:pointer;font: .84rem 'JetBrains Mono';overflow-wrap:anywhere}.history-item:hover{background:var(--blue2)}.pill{font-size:.72rem;padding:3px 8px;border-radius:20px;background:var(--blue2);color:var(--blue);font-weight:700}.footer{color:var(--muted);font-size:.78rem;text-align:center;padding:24px 5px}@media(max-width:640px){.shell{padding:13px 10px 40px}.card{padding:14px}.brand h1{font-size:1.25rem}.tag{font-size:.76rem}header{align-items:flex-start}.status{max-width:120px}}
 </style></head>
 <body><main class="shell">
-<header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic & numerical methods</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
+<header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
 <section class="card">
 <div class="section-title">Enter a mathematical expression</div>
-<textarea id="input" spellcheck="false" placeholder="Examples:&#10;integrate(exp(x)*(1+sin(x))/(1+cos(x)), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
+<textarea id="input" spellcheck="false" placeholder="Examples:\n dsolve(diff(y(x),x) + y(x), y(x))\n integrate(sin(x), x)\n diff(x^3*sin(x), x)\n solve(x^2 - 5*x + 6 = 0, x)"></textarea>
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
 <div class="section-title">Quick operations</div><div id="operations" class="row"></div>
 <div class="section-title">Scientific keypad</div><div id="keypad" class="keypad"></div>
@@ -43,7 +43,7 @@ const samples=[
 ['Matrix determinant','det([[2,1],[5,3]])'],
 ['Matrix inverse','inv([[2,1],[5,3]])'],
 ['Simplify','simplify((x^2-1)/(x-1))'],
-['Factor','factor(x^3 - 6*x^2 + 11*x - 6)']
+['Factor','factor(x^3 - 6*x^2 + 11*x - 6)'],\n['Differential equation','dsolve(diff(y(x),x) + y(x), y(x))']
 ];
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
 const operations=[['d/dx','diff('],['∂ partial','diff('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
@@ -64,7 +64,7 @@ def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
     # command forms
-    m=regex.match(r'^(diff|integrate|solve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
+    m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
     if m:
         op=m.group(1); body=m.group(2)
         # split top-level comma arguments
@@ -74,6 +74,23 @@ def run(q):
             elif ch in ')]': depth-=1
             elif ch==',' and depth==0: args.append(body[start:i].strip()); start=i+1
         args.append(body[start:].strip())
+        if op=='dsolve':
+            if len(args)<2:
+                raise ValueError("Use dsolve(diff(y(x), x) + y(x), y(x))")
+            # Parse the requested dependent variable as a SymPy function, not a scalar symbol.
+            func_match=regex.match(r'\\s*([A-Za-z]\\w*)\\s*\\(',args[1])
+            if not func_match:
+                raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
+            func_name=func_match.group(1)
+            dependent=sp.Function(func_name)
+            dlocals=dict(LOCALS)
+            dlocals[func_name]=dependent
+            equation=parse_expr(args[0],local_dict=dlocals,transformations=TRANS,evaluate=True)
+            func=parse_expr(args[1],local_dict=dlocals,transformations=TRANS,evaluate=True)
+            if not isinstance(equation,sp.Equality):
+                equation=sp.Eq(equation,0)
+            ans=sp.dsolve(equation,func)
+            return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
         if op=='diff':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
             ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans, [('Input function',f),('Differentiation variable',v),('Derivative',ans)])
@@ -183,7 +200,7 @@ async function calculate(qOverride){
   render(data,q);
   $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
  }catch(e){
-  $('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc(String(e).replace(/^PythonError:\\s*/,'').slice(0,700))+'</div><p class="hint">Check the expression syntax. Supported commands include diff, integrate, solve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></div></section>';
+  $('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc(String(e).replace(/^PythonError:\\s*/,'').slice(0,700))+'</div><p class="hint">Check the expression syntax. Supported commands include diff, integrate, solve, dsolve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></div></section>';
   $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
  }
 }
