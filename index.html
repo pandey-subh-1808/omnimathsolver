@@ -215,7 +215,7 @@ def run(q):
             ans=sp.Integral(f,v)
             for candidate in candidates:
                 try:
-                    trial=sp.integrate(candidate,v,meijerg=False)
+                    trial=sp.integrate(candidate,v)
                     if not trial.has(sp.Integral): ans=trial; break
                 except Exception: pass
             if ans.has(sp.Integral):
