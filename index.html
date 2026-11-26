@@ -42,6 +42,7 @@ textarea,.preview,.result{max-width:100%;min-width:0}
  .history-item{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
 }
 @media(min-width:641px) and (max-width:900px){.shell{max-width:820px;padding:20px 16px}}
+.toggle-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}.toggle-heading .section-title{margin:0}.toggle-btn{white-space:nowrap}#output>.card{margin-top:12px}[hidden]{display:none!important}
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
@@ -50,13 +51,15 @@ textarea,.preview,.result{max-width:100%;min-width:0}
 <textarea id="input" spellcheck="false" placeholder="Examples:&#10;dsolve(diff(y(x),x) + y(x), y(x))&#10;integrate(sin(x), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
 <div class="row solve-row" style="margin-top:14px"><button class="btn primary" id="calculate">Solve expression ↗</button></div>
+<div id="output" aria-live="polite"><section class="card"><div class="row" style="justify-content:space-between"><b>Solution &amp; working</b><span class="pill">Ready</span></div><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section></div>
 <div class="section-title">Quick operations</div><div id="operations" class="row"></div>
-<div class="section-title">Scientific keypad</div><div id="keypad" class="keypad"></div>
-<div class="row" style="margin-top:14px"><button class="btn" id="clear">Clear</button><button class="btn" id="backspace">⌫ Backspace</button><button class="btn" id="copy">Copy answer</button></div>
-<div class="section-title">Try a sample problem</div><div id="examples" class="examples"></div>
+<div class="toggle-heading"><span class="section-title">Scientific keypad</span><button class="btn soft toggle-btn" id="toggleKeypad" type="button" aria-expanded="false" aria-controls="keypadPanel">Show keypad + tools</button></div>
+<div id="keypadPanel" hidden><div id="keypad" class="keypad"></div>
+<div class="row" style="margin-top:14px"><button class="btn" id="clear">Clear</button><button class="btn" id="backspace">⌫ Backspace</button><button class="btn" id="copy">Copy answer</button></div></div>
+<div class="toggle-heading"><span class="section-title">Sample problems</span><button class="btn soft toggle-btn" id="toggleExamples" type="button" aria-expanded="false" aria-controls="examplesPanel">Show samples</button></div>
+<div id="examplesPanel" hidden><div id="examples" class="examples"></div></div>
 <p class="hint">Use ^ for powers; multiplication such as 2x is supported. Trigonometric functions use radians. Use sin(30*pi/180) for degrees. Variables are treated symbolically where appropriate.</p>
 </section>
-<div id="output" aria-live="polite"><section class="card"><div class="row" style="justify-content:space-between"><b>Solution &amp; working</b><span class="pill">Ready</span></div><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section></div>
 <section class="card"><div class="row" style="justify-content:space-between"><b>Calculation history</b><button class="btn" id="clearHistory">Clear history</button></div><div id="history"><p class="hint">Your recent calculations will appear here.</p></div></section>
 <div class="footer">OmniMath Solver · Built for learning, exploration and engineering mathematics</div>
 </main>
@@ -357,6 +360,17 @@ function init(){
  $('backspace').onclick=()=>{const t=$('input'),a=t.selectionStart,b=t.selectionEnd;if(a===b&&a>0)t.setRangeText('',a-1,b,'end');else t.setRangeText('',a,b,'end');preview();t.focus()};
  $('themeBtn').onclick=()=>{const dark=document.documentElement.dataset.theme!=='dark';document.documentElement.dataset.theme=dark?'dark':'light';$('themeBtn').setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');$('themeBtn').textContent=dark?'☀':'◐';};
  $('clearHistory').onclick=()=>{history=[];drawHistory()};
+ const setupToggle=(buttonId,panelId,showText,hideText)=>{
+  const button=$(buttonId),panel=$(panelId);
+  button.onclick=()=>{
+   const opening=panel.hidden;
+   panel.hidden=!opening;
+   button.textContent=opening?hideText:showText;
+   button.setAttribute('aria-expanded',String(opening));
+  };
+ };
+ setupToggle('toggleKeypad','keypadPanel','Show keypad + tools','Hide keypad + tools');
+ setupToggle('toggleExamples','examplesPanel','Show samples','Hide samples');
  $('copy').onclick=()=>{if(lastAnswer)navigator.clipboard?.writeText(lastAnswer)};
  keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
  operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
