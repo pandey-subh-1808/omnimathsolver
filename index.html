@@ -308,7 +308,7 @@ function boot(){
  if(solverWorker){solverWorker.terminate();solverWorker=null}
  engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
-  solverWorker=new Worker(new URL('./solver-worker.js?build=graphfix2',document.baseURI));
+  solverWorker=new Worker(new URL('./solver-worker.js?build=graphfix3-line33fix',document.baseURI));
   let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup is taking too long'}},90000);
   solverWorker.onmessage=event=>{
    const data=event.data||{};
