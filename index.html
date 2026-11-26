@@ -95,7 +95,10 @@ def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
     # Friendly first-order ODE shorthand: dsolve(diff(u,x)) = sin(x)
-    shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)(?:\s*=\s*(.+))?
+    shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)(?:\s*=\s*(.+))?$',q,regex.S)
+    if shorthand:
+        fname,varname,rhs_text=shorthand.groups()
+        rhs_text=rhs_text or '0'
         independent=sp.Symbol(varname)
         dependent=sp.Function(fname)
         function=dependent(independent)
