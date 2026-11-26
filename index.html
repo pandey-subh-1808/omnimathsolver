@@ -131,10 +131,10 @@ function expressionTex(q){
    const denominator=n===1?'d'+mathTex(v):'d'+mathTex(v)+'^'+n;
    return '\\frac{'+numerator+'}{'+denominator+'}='+mathTex(rhs||'0');
   }
-  const m=q.match(/^\s*(diff|integrate|limit|solve|simplify|factor|expand)\s*\((.*)\)\s*$/s);
+  const m=q.match(/^\s*(diff|partial|integrate|limit|solve|simplify|factor|expand)\s*\((.*)\)\s*$/s);
  if(!m)return mathTex(q);
  const op=m[1],args=splitPreviewArgs(m[2]),f=mathTex(args[0]||''),v=mathTex(args[1]||'x');
- if(op==='diff'){const order=Math.max(1,Math.min(6,Number(args[2]||1)));return order===1?'\\frac{d}{d'+v+'}\\left('+f+'\\right)':'\\frac{d^{'+order+'}}{d'+v+'^{'+order+'}}\\left('+f+'\\right)'}
+ if(op==='diff'){const order=Math.max(1,Math.min(12,Number(args[2]||1)));return order===1?'\\frac{d}{d'+v+'}\\left('+f+'\\right)':'\\frac{d^{'+order+'}}{d'+v+'^{'+order+'}}\\left('+f+'\\right)'}
  if(op==='partial'){const vars=args.slice(1).map(mathTex);if(!vars.length)return '\\operatorname{partial}\\left('+f+'\\right)';const top=vars.length===1?'\\partial '+f:'\\partial^{'+vars.length+'} '+f;return '\\frac{'+top+'}{'+vars.map(vv=>'\\partial '+vv).join('')+'}';
  if(op==='integrate')return '\\int '+f+'\\,d'+v;
  if(op==='limit')return '\\lim_{'+v+'\\to '+mathTex(args[2]||'0')+'}\\left('+f+'\\right)';
@@ -161,7 +161,7 @@ async function calculate(qOverride){
   $('engineDot').className='dot bad';$('engineStatus').textContent='Calculation timed out — restarting engine';
   $('output').innerHTML='<section class="card error"><b>Calculation timed out.</b><p class="hint">The solver stopped this calculation to keep the page responsive. Try a simpler form; the engine is restarting.</p></section>';
   boot();
- },45000);
+ },20000);
  solverWorker.postMessage({type:'calculate',expression:q});
 }
 function render(data,q){
