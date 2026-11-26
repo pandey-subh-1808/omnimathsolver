@@ -234,10 +234,26 @@ const samples=[
 ['ODE · fourth order','dsolve(diff(y(x),x,4) - 5*diff(y(x),x,2) + 4*y(x), y(x))'],
  ['ODE · fifth order','dsolve(diff(y(x),x,5) - diff(y(x),x,3), y(x))'],
  ['ODE · sixth order','dsolve(diff(y(x),x,6) - diff(y(x),x,4), y(x))'],
- ['ODE · shorthand 2nd order','dsolve(diff(u,x,2)) = cos(x)']
+ ['ODE · shorthand 2nd order','dsolve(diff(u,x,2)) = cos(x)'],
+['Real solution set','solveset(x^2-2,x,Reals)'],
+['Numerical root','nsolve(cos(x)-x,x,0.7)'],
+['Laplace transform','laplace(t^2,t,s)'],
+['Inverse Laplace','ilaplace(2/(s^3),s,t)'],
+['Fourier transform','fourier(exp(-x^2),x,k)'],
+['Finite summation','summation(k^2,(k,1,10))'],
+['Finite product','product(k,(k,1,5))'],
+['Partial fraction','apart(1/((x+1)*(x+2)),x)'],
+['Substitution','subs(x^2+2*x+1,x,3)'],
+['Matrix eigenvalues','eigenvals([[2,1],[1,2]])'],
+['Vector dot product','dot([1,2,3],[4,5,6])'],
+['Vector cross product','cross([1,0,0],[0,1,0])'],
+['Gradient','grad(x^2*y+y^2,x,y)'],
+['Divergence','divergence([x^2,y^2],x,y)'],
+['Curl','curl([-y,x,0],x,y,z)'],
+['Laplacian','laplacian(x^2+y^2,x,y)']
 ];
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
-const operations=[['d/dx','diff('],['∂ partial','partial('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
+const operations=[['d/dx','diff('],['∂ partial','partial('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Numeric root','nsolve('],['Taylor','taylor('],['Laplace','laplace('],['Fourier','fourier('],['Sum','summation('],['Product','product('],['Matrix det','det('],['Eigenvalues','eigenvals('],['Gradient','grad('],['Divergence','divergence('],['Curl','curl('],['Factor','factor('],['Simplify','simplify(']];
 function boot(){
  const status=$('engineStatus'),dot=$('engineDot');
  if(solverWorker){solverWorker.terminate();solverWorker=null}
