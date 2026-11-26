@@ -229,7 +229,7 @@ x^2/4-2</textarea></label>
     <label>Y maximum (optional)<input id="graphYMax" type="number" placeholder="Auto"></label>
    </div>
   </div>
-  <div class="graph-actions"><button class="btn primary" id="plotGraph">Plot graph ↗</button><button class="btn soft" id="analyseGraph">Analyse curves</button><button class="btn soft" id="resetGraph">Reset view</button></div>
+  <div class="graph-actions"><button class="btn primary" id="plotGraph">Plot graph ↗</button><button class="btn soft" id="analyseGraph">Run analysis</button><button class="btn soft" id="resetGraph">Reset view</button></div>
   <div id="graphPlot" class="graph-plot" role="img" aria-label="Interactive mathematical graph"></div>
   <p class="graph-help">Enter expressions such as <code>sin(x)</code>, <code>x^2-4</code>, <code>exp(-x^2)</code>, or <code>1/(x-2)</code>. Use <code>z=x^2+y^2</code> in 3D mode. Functions use radians. Plotly provides zoom, pan, hover coordinates and image export.</p>
   <div class="section-title" style="margin-top:18px">Numerical graph analysis</div>
@@ -500,7 +500,7 @@ function graphAnalysis(){
  }catch(e){graphShowResults('Analysis error',e.message)}
 }
 function initGraphing(){
- $('plotGraph').onclick=plotGraph;$('analyseGraph').onclick=plotGraph;$('runGraphAnalysis').onclick=graphAnalysis;
+ $('plotGraph').onclick=plotGraph;$('analyseGraph').onclick=graphAnalysis;$('runGraphAnalysis').onclick=graphAnalysis;
  $('resetGraph').onclick=()=>{if(window.Plotly)Plotly.relayout('graphPlot',{ 'xaxis.autorange':true,'yaxis.autorange':true });};
  $('sendGraphToCalc').onclick=()=>{const first=graphFunctions()[0];if(!first)return;const expr=first.replace(/^y\\s*=\\s*/i,'');$('input').value='simplify('+expr+')';preview();document.querySelector('[data-section="calculatorSection"]').click()};
  $('graphAnalysis').onchange=()=>{$('graphParameterLabel').style.display=$('graphAnalysis').value==='tangent'?'grid':'none'};
