@@ -78,7 +78,7 @@ def run(q):
             if len(args)<2:
                 raise ValueError("Use dsolve(diff(y(x), x) + y(x), y(x))")
             # Parse the requested dependent variable as a SymPy function, not a scalar symbol.
-            func_match=regex.match(r'\\s*([A-Za-z]\\w*)\\s*\\(',args[1])
+            func_match=regex.match(r'\s*([A-Za-z]\w*)\s*\(',args[1])
             if not func_match:
                 raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
             func_name=func_match.group(1)
