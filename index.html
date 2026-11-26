@@ -98,14 +98,16 @@ ALLOWED_CALLS = {'dsolve','diff','integrate','solve','limit','series','simplify'
                  'sinh','cosh','tanh','exp','sqrt','log','ln','log10','abs','Abs','factorial','Matrix'}
 def validate_input(q):
     if len(q)>320: raise ValueError("Expression is too long (maximum 320 characters).")
-    if any(token in q for token in ('__','.',"'",'"',';','{','}','\\',':')):
+    if any(token in q for token in ('__',"'",'"',';','{','}','\\',':')):
         raise ValueError("Unsupported syntax. Enter a mathematical expression, not Python code.")
-    if not regex.fullmatch(r'[A-Za-z0-9_+\\-*/^().,\\[\\]=\\s]+',q):
+    if regex.search(r'\.[A-Za-z_]',q):
+        raise ValueError("Attribute access is not supported.")
+    if not regex.fullmatch(r'[A-Za-z0-9_+*/^().,\[\]=\s-]+',q):
         raise ValueError("Unsupported character in expression.")
-    if len(regex.findall(r'[A-Za-z][A-Za-z0-9_]*|\\d+|[^\\s]',q))>120:
+    if len(regex.findall(r'[A-Za-z][A-Za-z0-9_]*|\d+|[^\s]',q))>120:
         raise ValueError("Expression is too complex (maximum 120 tokens).")
-    if max(q.count('(')-q.count(')'),q.count('[')-q.count(']'))>0:
-        raise ValueError("Check the closing brackets.")
+    if q.count('(')!=q.count(')') or q.count('[')!=q.count(']'):
+        raise ValueError("Check the brackets.")
     depth=0
     for ch in q:
         if ch in '([':
@@ -114,13 +116,12 @@ def validate_input(q):
         elif ch in ')]':
             depth-=1
             if depth<0: raise ValueError("Check the brackets.")
-    if depth: raise ValueError("Check the closing brackets.")
-    if regex.search(r'\\b([A-Za-z][A-Za-z0-9_]*)\\s*\\(',q):
-        for name in regex.findall(r'\\b([A-Za-z][A-Za-z0-9_]*)\\s*\\(',q):
-            if name not in ALLOWED_CALLS: raise ValueError("Function '"+name+"' is not supported.")
-    for number in regex.findall(r'\\b\\d+\\b',q):
+    if depth: raise ValueError("Check the brackets.")
+    for name in regex.findall(r'\b([A-Za-z][A-Za-z0-9_]*)\s*\(',q):
+        if name not in ALLOWED_CALLS: raise ValueError("Function '"+name+"' is not supported.")
+    for number in regex.findall(r'\b\d+\b',q):
         if len(number)>12: raise ValueError("Numeric literals are limited to 12 digits.")
-    for power in regex.findall(r'(?:\\^|\\*\\*)\\s*(\\d+)',q):
+    for power in regex.findall(r'(?:\^|\*\*)\s*(\d+)',q):
         if int(power)>20: raise ValueError("Powers above 20 are blocked to prevent excessive symbolic expansion.")
 def P(q):
     q=q.strip()
