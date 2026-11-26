@@ -65,7 +65,7 @@ def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
     # Friendly first-order ODE shorthand: dsolve(diff(u,x)) = sin(x)
-    shorthand=regex.match(r'^dsolve\\s*\\(\\s*diff\\s*\\(\\s*([A-Za-z]\\w*)\\s*,\\s*([A-Za-z]\\w*)\\s*\\)\\s*\\)\\s*=\\s*(.+)
+    shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)\s*=\s*(.+)
     m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
     if m:
         op=m.group(1); body=m.group(2)
