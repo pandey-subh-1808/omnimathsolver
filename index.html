@@ -43,18 +43,20 @@ textarea,.preview,.result{max-width:100%;min-width:0}
 }
 @media(min-width:641px) and (max-width:900px){.shell{max-width:820px;padding:20px 16px}}
 .toggle-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}.toggle-heading .section-title{margin:0}.toggle-btn{white-space:nowrap}#output>.card{margin-top:12px}[hidden]{display:none!important}
-/* Full-screen section workspace */
+/* Full-screen section workspace — one visible panel at a time */
 :root{--accent2:#7b61e8;--nav-glass:color-mix(in srgb,var(--panel) 90%,transparent)}
-html,body{height:100%;min-height:0;overflow:hidden}
+html,body{width:100%;height:100%;min-height:0;overflow:hidden}
 body{padding:0}
-.shell{height:100dvh;min-height:0;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:10px 14px 88px}
+.shell{width:100%;height:100vh;height:100dvh;min-height:0;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:10px 14px 0}
 header{flex:0 0 auto;padding:4px 0 12px;margin-bottom:8px}
 main.shell{max-width:1120px}
-.app-section{flex:1 1 auto;min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;padding:0 2px 8px}
+.app-section{display:none!important;flex:1 1 0;min-height:0;max-height:none;width:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;padding:0 2px 92px}
 .app-section::-webkit-scrollbar{display:none}
 .app-section[hidden]{display:none!important}
-.app-section.active{display:block}
+.app-section.active{display:block!important}
 .app-section>.card{margin-top:8px}
+.footer{display:none!important}
+
 
 .mark{box-shadow:0 9px 24px #536be744}
 .brand h1{font-size:1.7rem}
@@ -292,15 +294,18 @@ function init(){
  samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();calculate()};$('examples').append(b)});
  drawHistory();
  const showSection=target=>{
-  document.querySelectorAll('.app-section').forEach(section=>{
-   const active=section.id===target;
-   section.hidden=!active;
+  const sections=[...document.querySelectorAll('.app-section')];
+  const exists=sections.some(section=>section.id===target);
+  const selected=exists?target:'calculatorSection';
+  sections.forEach(section=>{
+   const active=section.id===selected;
    section.classList.toggle('active',active);
-   section.style.display=active?'block':'none';
+   if(active){section.removeAttribute('hidden');section.style.setProperty('display','block','important');}
+   else{section.setAttribute('hidden','');section.style.removeProperty('display');}
    if(active)section.scrollTop=0;
   });
   document.querySelectorAll('.nav-item').forEach(item=>{
-   const active=item.dataset.section===target;
+   const active=item.dataset.section===selected;
    item.classList.toggle('active',active);
    if(active)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');
   });
