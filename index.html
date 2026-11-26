@@ -308,7 +308,7 @@ function boot(){
  if(solverWorker){solverWorker.terminate();solverWorker=null}
  engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
-  solverWorker=new Worker(new URL('./solver-worker.js',document.baseURI));
+  solverWorker=new Worker(new URL('./solver-worker.js?build=graphfix2',document.baseURI));
   let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup is taking too long'}},90000);
   solverWorker.onmessage=event=>{
    const data=event.data||{};
@@ -318,7 +318,8 @@ function boot(){
    if(data.type==='calculation-error'){clearTimeout(calculationTimer);calculationInProgress=false;$('calculate').disabled=false;$('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc(data.message||'Unknown calculation error')+'</div><p class="hint">Try a simpler expression or check the supported syntax.</p></div></section>';return}
    if(data.type==='fatal'){clearTimeout(startupTimer);engineReady=false;dot.className='dot bad';status.textContent='Math engine failed: '+String(data.message||'worker error').slice(0,100);$('output').innerHTML='<section class="card error"><b>Mathematics engine failed.</b><p class="hint">'+esc(data.message||'Reload the page and check your connection.')+'</p></section>'}
   };
-  solverWorker.onerror=event=>{engineReady=false;dot.className='dot bad';status.textContent='Math worker failed to load';console.error(event)};
+  solverWorker.onerror=event=>{engineReady=false;dot.className='dot bad';status.textContent='Math worker failed: '+(event.message||'script could not be loaded')+(event.lineno?' (line '+event.lineno+')':'');console.error('OmniMath worker load error',event.message,event.filename,event.lineno,event.colno)};
+  solverWorker.onmessageerror=event=>{console.error('OmniMath worker message error',event);};
  }catch(e){engineReady=false;dot.className='dot bad';status.textContent='Web Worker unavailable';console.error(e)}
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
