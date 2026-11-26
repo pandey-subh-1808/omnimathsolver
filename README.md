@@ -40,3 +40,12 @@ The symbolic engine loads Pyodide and SymPy from their public CDNs, so an intern
 ## Project status
 
 This is an educational project. Verify important results independently before using them in assessed or safety-critical work.
+
+
+### Calculus coverage and limits
+
+- Differentiation: symbolic derivatives through order 12 (`diff(f, x, 4)` displays fourth-order notation); mixed partial derivatives through 12 listed variables (`partial(f, x, y, x)`).
+- Integration: indefinite symbolic integration and definite integration using either `integrate(f, x, a, b)` or `integrate(f, (x, a, b))`. Definite integrals may return an exact value or a clearly labelled numerical approximation when the symbolic result remains unevaluated.
+- ODEs: `dsolve(...)` supports SymPy's supported equation classes; the app does not guarantee closed-form solutions for every ODE or integral.
+- Calculations run in a Web Worker with a timeout so a difficult expression does not freeze the page. A timeout is reported as such; it is not treated as a mathematical answer.
+- This is a browser-based SymPy workbench, not a replacement for MATLAB's full symbolic/numeric toolboxes. No CAS can promise closed forms for every expression.
