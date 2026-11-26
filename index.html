@@ -93,6 +93,7 @@ LOCALS = {
     'abs':sp.Abs, 'Abs':sp.Abs, 'factorial':sp.factorial, 'Matrix':sp.Matrix,
     'Ans':sp.Integer(0)
 }
+SAFE_GLOBALS = {'Symbol':sp.Symbol,'Integer':sp.Integer,'Float':sp.Float,'Rational':sp.Rational,'Function':sp.Function}
 ALLOWED_CALLS = {'dsolve','diff','integrate','solve','limit','series','simplify','factor','expand',
                  'det','inv','rank','eigenvals','grad','sin','cos','tan','asin','acos','atan',
                  'sinh','cosh','tanh','exp','sqrt','log','ln','log10','abs','Abs','factorial','Matrix'}
@@ -127,7 +128,7 @@ def P(q):
     q=q.strip()
     if not q: raise ValueError("Enter an expression.")
     validate_input(q)
-    return parse_expr(q, local_dict=LOCALS, transformations=TRANS, evaluate=True)
+    return parse_expr(q, local_dict=LOCALS, global_dict=SAFE_GLOBALS, transformations=TRANS, evaluate=True)
 def guard_complexity(expr,limit=120):
     if sp.count_ops(expr)>limit:
         raise ValueError("This expression is too complex for a safe symbolic operation. Simplify it or split it into smaller steps.")
@@ -145,7 +146,7 @@ def run(q):
         function=dependent(independent)
         local=dict(LOCALS)
         local[varname]=independent
-        rhs=parse_expr(rhs_text,local_dict=local,transformations=TRANS,evaluate=True)
+        rhs=parse_expr(rhs_text,local_dict=local,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
         guard_complexity(rhs)
         equation=sp.Eq(sp.diff(function,independent),rhs)
         solution=sp.dsolve(equation,function)
@@ -166,8 +167,8 @@ def run(q):
             func_name=func_match.group(1)
             dependent=sp.Function(func_name)
             dlocals=dict(LOCALS); dlocals[func_name]=dependent
-            equation=parse_expr(args[0],local_dict=dlocals,transformations=TRANS,evaluate=True)
-            func=parse_expr(args[1],local_dict=dlocals,transformations=TRANS,evaluate=True)
+            equation=parse_expr(args[0],local_dict=dlocals,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
+            func=parse_expr(args[1],local_dict=dlocals,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
             if not isinstance(equation,sp.Equality): equation=sp.Eq(equation,0)
             ans=sp.dsolve(equation,func)
             return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
