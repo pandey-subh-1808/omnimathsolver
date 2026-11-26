@@ -49,9 +49,10 @@ textarea,.preview,.result{max-width:100%;min-width:0}
 <div class="section-title">Enter a mathematical expression</div>
 <textarea id="input" spellcheck="false" placeholder="Examples:&#10;dsolve(diff(y(x),x) + y(x), y(x))&#10;integrate(sin(x), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
+<div class="row solve-row" style="margin-top:14px"><button class="btn primary" id="calculate">Solve expression ↗</button></div>
 <div class="section-title">Quick operations</div><div id="operations" class="row"></div>
 <div class="section-title">Scientific keypad</div><div id="keypad" class="keypad"></div>
-<div class="row" style="margin-top:14px"><button class="btn primary" id="calculate">Solve expression ↗</button><button class="btn" id="clear">Clear</button><button class="btn" id="backspace">⌫ Backspace</button><button class="btn" id="copy">Copy answer</button></div>
+<div class="row" style="margin-top:14px"><button class="btn" id="clear">Clear</button><button class="btn" id="backspace">⌫ Backspace</button><button class="btn" id="copy">Copy answer</button></div>
 <div class="section-title">Try a sample problem</div><div id="examples" class="examples"></div>
 <p class="hint">Use ^ for powers; multiplication such as 2x is supported. Trigonometric functions use radians. Use sin(30*pi/180) for degrees. Variables are treated symbolically where appropriate.</p>
 </section>
