@@ -128,6 +128,9 @@ def P(q):
     if not q: raise ValueError("Enter an expression.")
     validate_input(q)
     return parse_expr(q, local_dict=LOCALS, transformations=TRANS, evaluate=True)
+def guard_complexity(expr,limit=120):
+    if sp.count_ops(expr)>limit:
+        raise ValueError("This expression is too complex for a safe symbolic operation. Simplify it or split it into smaller steps.")
 def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
@@ -143,6 +146,7 @@ def run(q):
         local=dict(LOCALS)
         local[varname]=independent
         rhs=parse_expr(rhs_text,local_dict=local,transformations=TRANS,evaluate=True)
+        guard_complexity(rhs)
         equation=sp.Eq(sp.diff(function,independent),rhs)
         solution=sp.dsolve(equation,function)
         return ('Differential equation solution',solution,[('Differential equation',equation),('Dependent function',function),('General solution',solution)])
@@ -170,10 +174,12 @@ def run(q):
         if op=='diff':
             if len(args)>2: raise ValueError("Use diff(expression, variable). Repeated derivative orders are capped; apply one derivative at a time.")
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
+            guard_complexity(f)
             if sp.count_ops(f)>250: raise ValueError("This expression is too large to differentiate safely.")
             ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans,[('Input function',f),('Differentiation variable',v),('Derivative',ans)])
         if op=='integrate':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
+            guard_complexity(f,80)
             if len(args)>=4:
                 lo,hi=P(args[2]),P(args[3]); ans=sp.integrate(f,(v,lo,hi))
                 return ('Definite integral',ans,[('Integrand',f),('Bounds',sp.Tuple(lo,hi)),('Exact evaluation',ans)])
@@ -206,6 +212,7 @@ def run(q):
             return ('Solve for '+str(v),ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
         if op=='limit':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0
+            guard_complexity(f)
             ans=sp.limit(f,v,point); return ('Limit',ans,[('Expression',f),('Approach value',point),('Limit',ans)])
         if op=='series':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0; order=int(args[3]) if len(args)>3 else 6
@@ -213,7 +220,7 @@ def run(q):
             if sp.count_ops(f)>250: raise ValueError("This expression is too large for a safe Taylor expansion.")
             ans=sp.series(f,v,point,n=order); return ('Taylor series',ans,[('Function',f),('Expansion point',point),('Series',ans)])
         if op in ('simplify','factor','expand'):
-            f=P(args[0]); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
+            f=P(args[0]); guard_complexity(f,80); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
         if op in ('det','inv','rank','eigenvals'):
             M=P(args[0]); M=sp.Matrix(M) if isinstance(M,(list,tuple)) else M
             if M.rows>8 or M.cols>8: raise ValueError("Matrix operations are limited to 8 × 8.")
@@ -233,7 +240,14 @@ def run(q):
     return ('Evaluation / simplification',ans,[('Parsed expression',P(q)),('Result',ans)])
 def answer(q):
     title,ans,steps=run(q)
-    return {'title':title,'latex':latex(ans),'plain':str(ans),'steps':[{'label':str(k),'latex':latex(v),'plain':str(v)} for k,v in steps]}
+    plain=str(ans); tex=latex(ans)
+    if len(plain)>12000 or len(tex)>20000: raise ValueError("The result is too large to display safely. Try a simpler expression or a lower series order.")
+    rendered=[]
+    for k,v in steps:
+        step_plain=str(v); step_tex=latex(v)
+        if len(step_plain)>12000 or len(step_tex)>20000: raise ValueError("The working is too large to display safely.")
+        rendered.append({'label':str(k),'latex':step_tex,'plain':step_plain})
+    return {'title':title,'latex':tex,'plain':plain,'steps':rendered}
 `;
 async function boot(){
  const status=$('engineStatus'),dot=$('engineDot');
