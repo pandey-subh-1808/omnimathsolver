@@ -94,12 +94,6 @@ header{padding-bottom:22px}
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
 <div class="row solve-row" style="margin-top:14px"><button class="btn primary" id="calculate" type="button">Solve expression ↗</button></div>
 <div id="output" aria-live="polite"><section class="card"><div class="row" style="justify-content:space-between"><b>Solution &amp; working</b><span class="pill">Ready</span></div><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section></div>
-<div class="section-title">Quick operations</div><div id="operations" class="row"></div>
-<div class="toggle-heading"><span class="section-title">Scientific keypad</span><button class="btn soft toggle-btn" id="toggleKeypad" type="button" aria-expanded="false" aria-controls="keypadPanel">Show keypad + tools</button></div>
-<div id="keypadPanel" hidden><div id="keypad" class="keypad"></div>
-<div class="row" style="margin-top:14px"><button class="btn" id="clear">Clear</button><button class="btn" id="backspace">⌫ Backspace</button><button class="btn" id="copy">Copy answer</button></div></div>
-<div class="toggle-heading"><span class="section-title">Sample problems</span><button class="btn soft toggle-btn" id="toggleExamples" type="button" aria-expanded="false" aria-controls="examplesPanel">Show samples</button></div>
-<div id="examplesPanel" hidden><div id="examples" class="examples"></div></div>
 </section>
 <section id="toolsSection" class="app-section" hidden>
 <section class="card">
@@ -275,7 +269,6 @@ function init(){
   };
  };
  setupToggle('toggleKeypad','keypadPanel','Show keypad + tools','Hide keypad + tools');
- setupToggle('toggleExamples','examplesPanel','Show samples','Hide samples');
  $('copy').onclick=()=>{if(lastAnswer)navigator.clipboard?.writeText(lastAnswer)};
  keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
  operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
