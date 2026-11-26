@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjs@14.0.1/lib/browser/math.js"></script>
+<script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
 <style>
 :root{--bg:#f3f6fc;--panel:#fff;--soft:#f7f9fd;--ink:#17243b;--muted:#64748b;--line:#e2e8f0;--blue:#3659d9;--blue2:#eaf0ff;--green:#087f5b;--red:#c92a2a;--shadow:0 12px 34px #1e31500c}
@@ -169,6 +171,21 @@ main.shell>.floating-nav{flex:none}
  main.shell>.app-section.active{min-height:0}
 }
 
+
+/* Graphing workspace */
+.graph-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.graph-controls label{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:700}
+.graph-controls input,.graph-controls textarea,.graph-controls select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--soft);color:var(--ink);font:inherit;min-width:0}
+.graph-controls textarea{min-height:92px;resize:vertical;font-family:'JetBrains Mono',monospace}
+.graph-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.graph-plot{width:100%;height:430px;min-height:300px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.graph-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin-top:12px}
+.graph-result{padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--soft);min-width:0}
+.graph-result b{display:block;margin-bottom:5px;font-size:13px}
+.graph-result span{font-family:'JetBrains Mono',monospace;font-size:12px;overflow-wrap:anywhere}
+.graph-help{font-size:12px;color:var(--muted);line-height:1.55}
+@media(max-width:600px){.graph-controls{grid-template-columns:1fr}.graph-plot{height:340px;min-height:280px}}
+
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
@@ -197,6 +214,36 @@ main.shell>.floating-nav{flex:none}
 <p class="hint" style="margin-top:18px">Use ^ for powers; multiplication such as 2x is supported. Trigonometric functions use radians. Use sin(30*pi/180) for degrees. Variables are treated symbolically where appropriate.</p>
 </section>
 </section>
+
+<section id="graphSection" class="app-section" hidden>
+ <section class="card">
+  <div class="section-heading"><div><span class="eyebrow">VISUAL MATHEMATICS</span><h2>Graphing &amp; curve analysis</h2><p class="hint">Plot functions, compare curves and inspect numerical features.</p></div><span class="section-icon">⌁</span></div>
+  <div class="graph-controls">
+   <label>Functions (one per line)<textarea id="graphFunctions" spellcheck="false">sin(x)
+x^2/4-2</textarea></label>
+   <div style="display:grid;gap:10px">
+    <label>Graph mode<select id="graphMode"><option value="2d">2D functions</option><option value="3d">3D surface z = f(x,y)</option></select></label>
+    <label>X minimum<input id="graphXMin" type="number" value="-10" step="any"></label>
+    <label>X maximum<input id="graphXMax" type="number" value="10" step="any"></label>
+    <label>Y minimum (optional)<input id="graphYMin" type="number" placeholder="Auto"></label>
+    <label>Y maximum (optional)<input id="graphYMax" type="number" placeholder="Auto"></label>
+   </div>
+  </div>
+  <div class="graph-actions"><button class="btn primary" id="plotGraph">Plot graph ↗</button><button class="btn soft" id="analyseGraph">Analyse curves</button><button class="btn soft" id="resetGraph">Reset view</button></div>
+  <div id="graphPlot" class="graph-plot" role="img" aria-label="Interactive mathematical graph"></div>
+  <p class="graph-help">Enter expressions such as <code>sin(x)</code>, <code>x^2-4</code>, <code>exp(-x^2)</code>, or <code>1/(x-2)</code>. Use <code>z=x^2+y^2</code> in 3D mode. Functions use radians. Plotly provides zoom, pan, hover coordinates and image export.</p>
+  <div class="section-title" style="margin-top:18px">Numerical graph analysis</div>
+  <div class="graph-controls">
+   <label>Analysis method<select id="graphAnalysis"><option value="roots">Roots / x-intercepts</option><option value="intersections">Intersections (first two curves)</option><option value="extrema">Local maxima &amp; minima</option><option value="tangent">Tangent and normal at x =</option><option value="area">Signed area under first curve</option></select></label>
+   <label id="graphParameterLabel">Parameter / x value<input id="graphParameter" type="number" value="0" step="any"></label>
+   <label>Lower bound (area)<input id="graphLower" type="number" value="0" step="any"></label>
+   <label>Upper bound (area)<input id="graphUpper" type="number" value="1" step="any"></label>
+  </div>
+  <div class="graph-actions"><button class="btn" id="runGraphAnalysis">Run graph analysis</button><button class="btn soft" id="sendGraphToCalc">Send first function to calculator</button></div>
+  <div id="graphResults" class="graph-results"><div class="graph-result"><b>Ready</b><span>Plot a function, then run an analysis.</span></div></div>
+ </section>
+</section>
+
 <section id="historySection" class="app-section" hidden>
 <section class="card">
 <div class="section-heading"><div><span class="eyebrow">RECENT WORK</span><h2>Calculation history</h2><p class="hint">Reopen a previous expression with one tap.</p></div><button class="btn" id="clearHistory">Clear history</button></div>
@@ -207,6 +254,7 @@ main.shell>.floating-nav{flex:none}
 <button class="nav-item active" type="button" data-section="calculatorSection" aria-current="page"><span class="nav-icon">⌗</span><span>Calculator</span></button>
 <button class="nav-item" type="button" data-section="toolsSection"><span class="nav-icon">∑</span><span>Tools</span></button>
 <button class="nav-item" type="button" data-section="examplesSection"><span class="nav-icon">✦</span><span>Samples</span></button>
+<button class="nav-item" type="button" data-section="graphSection"><span class="nav-icon">⌁</span><span>Graphs</span></button>
 <button class="nav-item" type="button" data-section="historySection"><span class="nav-icon">◷</span><span>History</span></button>
 </nav>
 <div class="footer">OmniMath Solver · Built for learning, exploration and engineering mathematics</div>
@@ -250,7 +298,8 @@ const samples=[
 ['Gradient','grad(x^2*y+y^2,x,y)'],
 ['Divergence','divergence([x^2,y^2],x,y)'],
 ['Curl','curl([-y,x,0],x,y,z)'],
-['Laplacian','laplacian(x^2+y^2,x,y)']
+['Laplacian','laplacian(x^2+y^2,x,y)'],
+['Graph: parabola','x^2-4'],['Graph: sine wave','sin(x)'],['Graph: Gaussian','exp(-x^2)']
 ];
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
 const operations=[['d/dx','diff('],['∂ partial','partial('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Numeric root','nsolve('],['Taylor','taylor('],['Laplace','laplace('],['Fourier','fourier('],['Sum','summation('],['Product','product('],['Matrix det','det('],['Eigenvalues','eigenvals('],['Gradient','grad('],['Divergence','divergence('],['Curl','curl('],['Factor','factor('],['Simplify','simplify(']];
@@ -352,6 +401,113 @@ function drawHistory(){
   host.append(row);
  });
 }
+
+let lastGraphFunctions=[];
+function graphParseExpression(raw){
+ let q=raw.trim().replace(/^y\\s*=\\s*/i,'').replace(/^[A-Za-z_]\\w*\\(x\\)\\s*=\\s*/i,'');
+ if(!q)throw new Error('Enter at least one function.');
+ return q;
+}
+function graphCompile(raw,mode){
+ const q=graphParseExpression(raw);
+ if(!window.math||!math.compile)throw new Error('Graph mathematics library is still loading. Refresh and try again.');
+ const expr=mode==='3d'?q.replace(/^z\\s*=\\s*/i,''):q;
+ return {label:raw.trim(),compiled:math.compile(expr),source:expr};
+}
+function graphFunctions(){return $('graphFunctions').value.split(/\\n|;/).map(v=>v.trim()).filter(Boolean)}
+function graphEvaluate(fn,x,y){
+ const scope={x,y,pi:Math.PI,e:Math.E};
+ const value=fn.compiled.evaluate(scope);
+ return typeof value==='number'&&Number.isFinite(value)?value:NaN;
+}
+function graphLayout(title){
+ const dark=document.documentElement.dataset.theme==='dark';
+ return {title:{text:title,font:{size:14}},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:dark?'#e7edf8':'#17243b'},margin:{l:48,r:18,t:42,b:44},xaxis:{title:'x',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'},yaxis:{title:'y',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'},legend:{orientation:'h',y:-0.2},autosize:true};
+}
+function graphRange(){
+ const xmin=Number($('graphXMin').value),xmax=Number($('graphXMax').value);
+ if(!Number.isFinite(xmin)||!Number.isFinite(xmax)||xmin>=xmax)throw new Error('X minimum must be smaller than X maximum.');
+ return {xmin,xmax};
+}
+function plotGraph(){
+ try{
+  const mode=$('graphMode').value,inputs=graphFunctions();
+  if(!inputs.length)throw new Error('Enter one or more functions, one per line.');
+  if(mode==='3d'){
+   const fn=graphCompile(inputs[0],mode),{xmin,xmax}=graphRange(),ymin=Number($('graphYMin').value||xmin),ymax=Number($('graphYMax').value||xmax);
+   const n=45,xx=[],yy=[],zz=[];
+   for(let i=0;i<n;i++)xx.push(xmin+(xmax-xmin)*i/(n-1));
+   for(let j=0;j<n;j++)yy.push(ymin+(ymax-ymin)*j/(n-1));
+   for(const y of yy)zz.push(xx.map(x=>graphEvaluate(fn,x,y)));
+   Plotly.react('graphPlot',[{type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false}],{...graphLayout('3D surface'),scene:{xaxis:{title:'x'},yaxis:{title:'y'},zaxis:{title:'z'}}},{responsive:true,displaylogo:false});
+   lastGraphFunctions=inputs;return;
+  }
+  const {xmin,xmax}=graphRange(),traces=[];
+  lastGraphFunctions=inputs;
+  inputs.forEach(raw=>{
+   const fn=graphCompile(raw,'2d'),xs=[],ys=[],N=1000;
+   for(let i=0;i<=N;i++){const x=xmin+(xmax-xmin)*i/N;xs.push(x);ys.push(graphEvaluate(fn,x));}
+   traces.push({x:xs,y:ys,type:'scatter',mode:'lines',name:raw,line:{width:2.5},connectgaps:false});
+  });
+  const layout=graphLayout('2D function plot');
+  const ymin=$('graphYMin').value,ymax=$('graphYMax').value;
+  if(ymin!==''&&ymax!==''){layout.yaxis.range=[Number(ymin),Number(ymax)];}
+  Plotly.react('graphPlot',traces,layout,{responsive:true,displaylogo:false,scrollZoom:true});
+ }catch(e){graphShowResults('Graph error',e.message)}
+}
+function graphShowResults(title,body){
+ $('graphResults').innerHTML='<div class="graph-result"><b>'+esc(title)+'</b><span>'+esc(body)+'</span></div>';
+}
+function graphBisection(fn,a,b){
+ let fa=graphEvaluate(fn,a),fb=graphEvaluate(fn,b);if(!Number.isFinite(fa)||!Number.isFinite(fb)||fa*fb>0)return null;
+ for(let i=0;i<65;i++){const m=(a+b)/2,fm=graphEvaluate(fn,m);if(!Number.isFinite(fm))return null;if(Math.abs(fm)<1e-11)return m;if(fa*fm<=0){b=m;fb=fm}else{a=m;fa=fm}}
+ return (a+b)/2;
+}
+function graphDerivative(fn,x,h){return (graphEvaluate(fn,x+h)-graphEvaluate(fn,x-h))/(2*h)}
+function graphAnalysis(){
+ try{
+  if($('graphMode').value!=='2d')throw new Error('Switch to 2D mode for this analysis.');
+  const inputs=graphFunctions(),{xmin,xmax}=graphRange(),kind=$('graphAnalysis').value;
+  if(!inputs.length)throw new Error('Enter a function first.');
+  const f=graphCompile(inputs[0],'2d'),N=3000,dx=(xmax-xmin)/N,items=[];
+  const fmt=v=>Number(v).toPrecision(9);
+  if(kind==='roots'){
+   let prevX=xmin,prevY=graphEvaluate(f,xmin);
+   for(let i=1;i<=N;i++){const x=xmin+i*dx,y=graphEvaluate(f,x);if(Number.isFinite(prevY)&&Number.isFinite(y)){if(Math.abs(prevY)<1e-9)items.push(prevX);else if(prevY*y<0){const r=graphBisection(f,prevX,x);if(r!==null)items.push(r)}}prevX=x;prevY=y}
+   if(Number.isFinite(prevY)&&Math.abs(prevY)<1e-9)items.push(prevX);
+   const unique=items.filter((v,i)=>items.findIndex(w=>Math.abs(v-w)<1e-5)===i);
+   graphShowResults('Numerical roots',unique.length?unique.map(fmt).join(', '):'No sign-changing roots detected in the selected interval. Tangential roots may be missed.');
+  }else if(kind==='intersections'){
+   if(inputs.length<2)throw new Error('Enter at least two functions, one per line.');
+   const g=graphCompile(inputs[1],'2d');let px=xmin,pd=graphEvaluate(f,px)-graphEvaluate(g,px);
+   for(let i=1;i<=N;i++){const x=xmin+i*dx,d=graphEvaluate(f,x)-graphEvaluate(g,x);if(Number.isFinite(pd)&&Number.isFinite(d)&&pd*d<0){const root=graphBisection({compiled:{evaluate:scope=>graphEvaluate(f,scope.x)-graphEvaluate(g,scope.x)}},px,x);if(root!==null)items.push([root,graphEvaluate(f,root)])}px=x;pd=d}
+   graphShowResults('Curve intersections',items.length?items.map(p=>'('+fmt(p[0])+', '+fmt(p[1])+')').join(' · '):'No crossing intersections detected in this interval. Tangencies may be missed.');
+  }else if(kind==='extrema'){
+   const vals=[];for(let i=1;i<N;i++){const x=xmin+i*dx,ym=graphEvaluate(f,x-dx),y=graphEvaluate(f,x),yp=graphEvaluate(f,x+dx);if([ym,y,yp].every(Number.isFinite)&&((y>ym&&y>yp)||(y<ym&&y<yp)))vals.push((y>ym?'Maximum':'Minimum')+' near ('+fmt(x)+', '+fmt(y)+')')}
+   graphShowResults('Local extrema',vals.length?vals.join(' · '):'No local extrema detected at the current sampling resolution.');
+  }else if(kind==='tangent'){
+   const x0=Number($('graphParameter').value),h=Math.max(1e-5,Math.abs(x0)*1e-5),y0=graphEvaluate(f,x0),m=graphDerivative(f,x0,h);
+   if(!Number.isFinite(y0)||!Number.isFinite(m))throw new Error('Could not evaluate the function near this x value.');
+   const tangent='y - ('+fmt(y0)+') = ('+fmt(m)+')(x - ('+fmt(x0)+'))';
+   const normal=Math.abs(m)<1e-12?'x = '+fmt(x0):'y - ('+fmt(y0)+') = ('+fmt(-1/m)+')(x - ('+fmt(x0)+'))';
+   graphShowResults('Tangent and normal','Tangent: '+tangent+' | Normal: '+normal+' | Slope: '+fmt(m));
+   const lineX=[xmin,xmax];Plotly.addTraces('graphPlot',[{x:lineX,y:lineX.map(x=>y0+m*(x-x0)),name:'Tangent',mode:'lines',line:{dash:'dash'} }]);
+  }else if(kind==='area'){
+   const a=Number($('graphLower').value),b=Number($('graphUpper').value);if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b)throw new Error('Area lower bound must be smaller than upper bound.');
+   const steps=4000,h=(b-a)/steps;let sum=0;for(let i=0;i<=steps;i++){const y=graphEvaluate(f,a+i*h);if(!Number.isFinite(y))throw new Error('Function is undefined within the selected integration interval.');sum+=(i===0||i===steps?1:i%2?4:2)*y}
+   graphShowResults('Approximate signed area','Simpson numerical integral ≈ '+fmt(sum*h/3)+' on ['+a+', '+b+'].');
+  }
+ }catch(e){graphShowResults('Analysis error',e.message)}
+}
+function initGraphing(){
+ $('plotGraph').onclick=plotGraph;$('analyseGraph').onclick=plotGraph;$('runGraphAnalysis').onclick=graphAnalysis;
+ $('resetGraph').onclick=()=>{if(window.Plotly)Plotly.relayout('graphPlot',{ 'xaxis.autorange':true,'yaxis.autorange':true });};
+ $('sendGraphToCalc').onclick=()=>{const first=graphFunctions()[0];if(!first)return;const expr=first.replace(/^y\\s*=\\s*/i,'');$('input').value='simplify('+expr+')';preview();document.querySelector('[data-section="calculatorSection"]').click()};
+ $('graphAnalysis').onchange=()=>{$('graphParameterLabel').style.display=$('graphAnalysis').value==='tangent'?'grid':'none'};
+ $('graphMode').onchange=()=>{const is3d=$('graphMode').value==='3d';$('graphAnalysis').disabled=is3d;$('runGraphAnalysis').disabled=is3d;};
+ if(window.Plotly){Plotly.newPlot('graphPlot',[],graphLayout('Enter functions and select Plot graph'),{responsive:true,displaylogo:false})}
+}
+
 function init(){
  $('calculate').textContent='Solve expression ↗';
  $('calculate').setAttribute('aria-label','Solve mathematical expression');
@@ -376,6 +532,7 @@ function init(){
  operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
  samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();calculate()};$('examples').append(b)});
  drawHistory();
+ initGraphing();
  const showSection=target=>{
   const sections=[...document.querySelectorAll('.app-section')];
   const exists=sections.some(section=>section.id===target);
