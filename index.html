@@ -111,6 +111,64 @@ header{display:flex;flex:initial;min-width:0;padding:4px 0 12px;margin:0;border-
  .calculator-card{padding:15px}
 }
 @media(prefers-reduced-motion:reduce){.app-section{animation:none}*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Reliable section layout: flex workspace instead of nested grid sizing */
+main.shell{
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:stretch;
+ gap:8px;
+ width:100%;
+ height:100vh;
+ height:100dvh;
+ min-height:0;
+ max-height:100dvh;
+ overflow:hidden;
+ padding:10px 14px 8px;
+}
+main.shell>header{flex:0 0 auto;min-height:0}
+main.shell>.app-section{
+ display:none!important;
+ flex:1 1 auto;
+ width:100%;
+ min-width:0;
+ min-height:0;
+ height:auto;
+ max-height:none;
+ position:relative;
+ overflow-x:hidden;
+ overflow-y:auto;
+ padding:0 2px 100px;
+ grid-row:auto!important;
+ grid-column:auto!important;
+}
+main.shell>.app-section.active{
+ display:block!important;
+ flex:1 1 auto;
+ min-height:0;
+ height:auto;
+ max-height:none;
+ grid-row:auto!important;
+ grid-column:auto!important;
+}
+main.shell>.app-section[hidden]{display:none!important}
+main.shell>.floating-nav{flex:none}
+@media(max-width:640px){
+ main.shell{
+  display:flex!important;
+  flex-direction:column!important;
+  height:100vh;
+  height:100dvh;
+  min-height:0;
+  max-height:100dvh;
+  padding:8px 10px 8px;
+  gap:6px;
+ }
+ main.shell>header{flex:0 0 auto;padding:2px 0 9px}
+ main.shell>.app-section{padding:0 2px 96px;min-height:0}
+ main.shell>.app-section.active{min-height:0}
+}
+
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
