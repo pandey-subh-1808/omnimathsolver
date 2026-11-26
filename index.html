@@ -50,7 +50,7 @@ textarea,.preview,.result{max-width:100%;min-width:0}
 <div class="section-title">Enter a mathematical expression</div>
 <textarea id="input" spellcheck="false" placeholder="Examples:&#10;dsolve(diff(y(x),x) + y(x), y(x))&#10;integrate(sin(x), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
-<div class="row solve-row" style="margin-top:14px"><button class="btn primary" id="calculate">Solve expression ↗</button></div>
+<div class="row solve-row" style="margin-top:14px"><button class="btn primary" id="calculate" type="button">Solve expression ↗</button></div>
 <div id="output" aria-live="polite"><section class="card"><div class="row" style="justify-content:space-between"><b>Solution &amp; working</b><span class="pill">Ready</span></div><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section></div>
 <div class="section-title">Quick operations</div><div id="operations" class="row"></div>
 <div class="toggle-heading"><span class="section-title">Scientific keypad</span><button class="btn soft toggle-btn" id="toggleKeypad" type="button" aria-expanded="false" aria-controls="keypadPanel">Show keypad + tools</button></div>
@@ -79,7 +79,11 @@ const samples=[
 ['Simplify','simplify((x^2-1)/(x-1))'],
 ['Factor','factor(x^3 - 6*x^2 + 11*x - 6)'],
 ['ODE · quick form','dsolve(diff(u,x)) = sin(x)'],
-['ODE · standard form','dsolve(diff(y(x),x) + y(x), y(x))']
+['ODE · first order','dsolve(diff(y(x),x) + y(x), y(x))'],
+['ODE · second order','dsolve(diff(y(x),x,2) - 3*diff(y(x),x) + 2*y(x), y(x))'],
+['ODE · third order','dsolve(diff(y(x),x,3) - diff(y(x),x), y(x))'],
+['ODE · non-homogeneous','dsolve(diff(y(x),x,2) + y(x), y(x))'],
+['ODE · fourth order','dsolve(diff(y(x),x,4) - 5*diff(y(x),x,2) + 4*y(x), y(x))']
 ];
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
 const operations=[['d/dx','diff('],['∂ partial','diff('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
@@ -101,7 +105,13 @@ SAFE_GLOBALS = {'Symbol':sp.Symbol,'Integer':sp.Integer,'Float':sp.Float,'Ration
 ALLOWED_CALLS = {'dsolve','diff','integrate','solve','limit','series','simplify','factor','expand',
                  'det','inv','rank','eigenvals','grad','sin','cos','tan','asin','acos','atan',
                  'sinh','cosh','tanh','exp','sqrt','log','ln','log10','abs','Abs','factorial','Matrix'}
+def normalize_math(q):
+    # Accept common Unicode math symbols pasted from notes/keyboards.
+    q=str(q).translate(str.maketrans({'⁰':'^0','¹':'^1','²':'^2','³':'^3','⁴':'^4','⁵':'^5','⁶':'^6','⁷':'^7','⁸':'^8','⁹':'^9','−':'-','–':'-','×':'*','÷':'/','π':'pi','·':'*'}))
+    return q
+
 def validate_input(q):
+    q=normalize_math(q)
     if len(q)>320: raise ValueError("Expression is too long (maximum 320 characters).")
     if any(token in q for token in ('__',"'",'"',';','{','}','\\',':')):
         raise ValueError("Unsupported syntax. Enter a mathematical expression, not Python code.")
@@ -129,7 +139,7 @@ def validate_input(q):
     for power in regex.findall(r'(?:\^|\*\*)\s*(\d+)',q):
         if int(power)>20: raise ValueError("Powers above 20 are blocked to prevent excessive symbolic expansion.")
 def P(q):
-    q=q.strip()
+    q=normalize_math(q).strip()
     if not q: raise ValueError("Enter an expression.")
     validate_input(q)
     return parse_expr(q, local_dict=LOCALS, global_dict=SAFE_GLOBALS, transformations=TRANS, evaluate=True)
@@ -138,7 +148,7 @@ def guard_complexity(expr,limit=120):
         raise ValueError("This expression is too complex for a safe symbolic operation. Simplify it or split it into smaller steps.")
 def latex(q): return sp.latex(q)
 def run(q):
-    q=q.strip()
+    q=normalize_math(q).strip()
     validate_input(q)
     # Friendly first-order ODE shorthand: dsolve(diff(u,x)) = sin(x)
     shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)(?:\s*=\s*(.+))?$',q,regex.S)
@@ -152,7 +162,7 @@ def run(q):
         local[varname]=independent
         rhs=parse_expr(rhs_text,local_dict=local,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
         guard_complexity(rhs)
-        equation=sp.Eq(sp.diff(function,independent),rhs)
+        equation=sp.Eq(sp.diff(function,independent,ode_order),rhs)
         solution=sp.dsolve(equation,function)
         return ('Differential equation solution',solution,[('Differential equation',equation),('Dependent function',function),('General solution',solution)])
     m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
@@ -170,18 +180,22 @@ def run(q):
             if not func_match: raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
             func_name=func_match.group(1)
             dependent=sp.Function(func_name)
-            dlocals=dict(LOCALS); dlocals[func_name]=dependent
+            dlocals=dict(LOCALS); dlocals[func_name]=dependent; dlocals['diff']=sp.diff
             equation=parse_expr(args[0],local_dict=dlocals,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
+            derivatives=equation.atoms(sp.Derivative)
+            if any(len(der.variables)>6 for der in derivatives): raise ValueError("ODE order is limited to 6 to keep calculations responsive.")
             func=parse_expr(args[1],local_dict=dlocals,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
             if not isinstance(equation,sp.Equality): equation=sp.Eq(equation,0)
             ans=sp.dsolve(equation,func)
             return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
         if op=='diff':
-            if len(args)>2: raise ValueError("Use diff(expression, variable). Repeated derivative orders are capped; apply one derivative at a time.")
+            if len(args)>3: raise ValueError("Use diff(expression, variable, order), with order from 1 to 6.")
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
+            order=int(args[2]) if len(args)>2 else 1
+            if order<1 or order>6: raise ValueError("Derivative order must be between 1 and 6.")
             guard_complexity(f)
             if sp.count_ops(f)>250: raise ValueError("This expression is too large to differentiate safely.")
-            ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans,[('Input function',f),('Differentiation variable',v),('Derivative',ans)])
+            ans=sp.diff(f,v,order); return ('Differentiate with respect to '+str(v),ans,[('Input function',f),('Differentiation variable',v),('Derivative',ans)])
         if op=='integrate':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
             guard_complexity(f,80)
@@ -354,6 +368,8 @@ function drawHistory(){
  });
 }
 function init(){
+ $('calculate').textContent='Solve expression ↗';
+ $('calculate').setAttribute('aria-label','Solve mathematical expression');
  $('calculate').onclick=()=>calculate();$('input').addEventListener('input',preview);
  $('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();calculate()}});
  $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='<section class="card"><b>Solution &amp; working</b><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section>';preview()};
