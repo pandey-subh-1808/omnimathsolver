@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+
 <style>
 :root{--bg:#f3f6fc;--panel:#fff;--soft:#f7f9fd;--ink:#17243b;--muted:#64748b;--line:#e2e8f0;--blue:#3659d9;--blue2:#eaf0ff;--green:#087f5b;--red:#c92a2a;--shadow:0 12px 34px #1e31500c}
 [data-theme=dark]{--bg:#0c1422;--panel:#131f31;--soft:#1a2a40;--ink:#edf3ff;--muted:#a2b2c9;--line:#2b3c55;--blue:#91aaff;--blue2:#233456;--green:#4bd4a4;--red:#ff8585;--shadow:0 12px 34px #0003;color-scheme:dark}
@@ -65,7 +65,7 @@ textarea,.preview,.result{max-width:100%;min-width:0}
 </main>
 <script>
 (()=>{'use strict';
-const $=id=>document.getElementById(id);let py=null,engineReady=false,lastAnswer='',history=[];
+const $=id=>document.getElementById(id);let solverWorker=null,engineReady=false,lastAnswer='',history=[],calculationInProgress=false,calculationTimer=null;
 const samples=[
 ['Definite integral','integrate(sin(x), x, 0, pi)'],
 ['Advanced integral','integrate(exp(x)*(1+sin(x))/(1+cos(x)), x)'],
@@ -89,205 +89,24 @@ const samples=[
  ['ODE · shorthand 2nd order','dsolve(diff(u,x,2)) = cos(x)']
 ];
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
-const operations=[['d/dx','diff('],['∂ partial','diff('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
-const pythonCode = String.raw`
-import re as regex
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor, function_exponentiation
-x,y,z,t,s,a,b,c,n = sp.symbols('x y z t s a b c n')
-TRANS = standard_transformations + (implicit_multiplication_application, convert_xor, function_exponentiation)
-# Deliberately small parser namespace: never expose the entire SymPy module.
-LOCALS = {
-    'pi':sp.pi, 'e':sp.E, 'ln':sp.log, 'log':sp.log, 'log10':lambda q:sp.log(q,10),
-    'sin':sp.sin, 'cos':sp.cos, 'tan':sp.tan, 'asin':sp.asin, 'acos':sp.acos, 'atan':sp.atan,
-    'sinh':sp.sinh, 'cosh':sp.cosh, 'tanh':sp.tanh, 'exp':sp.exp, 'sqrt':sp.sqrt,
-    'abs':sp.Abs, 'Abs':sp.Abs, 'factorial':sp.factorial, 'Matrix':sp.Matrix,
-    'Ans':sp.Integer(0)
-}
-SAFE_GLOBALS = {'Symbol':sp.Symbol,'Integer':sp.Integer,'Float':sp.Float,'Rational':sp.Rational,'Function':sp.Function}
-ALLOWED_CALLS = {'dsolve','diff','integrate','solve','limit','series','simplify','factor','expand',
-                 'det','inv','rank','eigenvals','grad','sin','cos','tan','asin','acos','atan',
-                 'sinh','cosh','tanh','exp','sqrt','log','ln','log10','abs','Abs','factorial','Matrix'}
-def normalize_math(q):
-    # Accept common Unicode math symbols pasted from notes/keyboards.
-    q=str(q).translate(str.maketrans({'⁰':'^0','¹':'^1','²':'^2','³':'^3','⁴':'^4','⁵':'^5','⁶':'^6','⁷':'^7','⁸':'^8','⁹':'^9','−':'-','–':'-','×':'*','÷':'/','π':'pi','·':'*'}))
-    return q
-
-def validate_input(q):
-    q=normalize_math(q)
-    if len(q)>320: raise ValueError("Expression is too long (maximum 320 characters).")
-    if any(token in q for token in ('__',"'",'"',';','{','}','\\',':')):
-        raise ValueError("Unsupported syntax. Enter a mathematical expression, not Python code.")
-    if regex.search(r'\.[A-Za-z_]',q):
-        raise ValueError("Attribute access is not supported.")
-    if not regex.fullmatch(r'[A-Za-z0-9_+*/^().,\[\]=\s-]+',q):
-        raise ValueError("Unsupported character in expression.")
-    if len(regex.findall(r'[A-Za-z][A-Za-z0-9_]*|\d+|[^\s]',q))>120:
-        raise ValueError("Expression is too complex (maximum 120 tokens).")
-    if q.count('(')!=q.count(')') or q.count('[')!=q.count(']'):
-        raise ValueError("Check the brackets.")
-    depth=0
-    for ch in q:
-        if ch in '([':
-            depth+=1
-            if depth>16: raise ValueError("Expression nesting is too deep (maximum 16 levels).")
-        elif ch in ')]':
-            depth-=1
-            if depth<0: raise ValueError("Check the brackets.")
-    if depth: raise ValueError("Check the brackets.")
-    for name in regex.findall(r'\b([A-Za-z][A-Za-z0-9_]*)\s*\(',q):
-        if name not in ALLOWED_CALLS: raise ValueError("Function '"+name+"' is not supported.")
-    for number in regex.findall(r'\b\d+\b',q):
-        if len(number)>12: raise ValueError("Numeric literals are limited to 12 digits.")
-    for power in regex.findall(r'(?:\^|\*\*)\s*(\d+)',q):
-        if int(power)>20: raise ValueError("Powers above 20 are blocked to prevent excessive symbolic expansion.")
-def P(q):
-    q=normalize_math(q).strip()
-    if not q: raise ValueError("Enter an expression.")
-    validate_input(q)
-    return parse_expr(q, local_dict=LOCALS, global_dict=SAFE_GLOBALS, transformations=TRANS, evaluate=True)
-def guard_complexity(expr,limit=120):
-    if sp.count_ops(expr)>limit:
-        raise ValueError("This expression is too complex for a safe symbolic operation. Simplify it or split it into smaller steps.")
-def latex(q): return sp.latex(q)
-def run(q):
-    q=normalize_math(q).strip()
-    validate_input(q)
-    # Friendly first-order ODE shorthand: dsolve(diff(u,x)) = sin(x)
-    shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*(?:,\s*([1-6])\s*)?\)\s*\)(?:\s*=\s*(.+))?$',q,regex.S)
-    if shorthand:
-        fname,varname,order_text,rhs_text=shorthand.groups()
-        ode_order=int(order_text or 1)
-        rhs_text=rhs_text or '0'
-        independent=sp.Symbol(varname)
-        dependent=sp.Function(fname)
-        function=dependent(independent)
-        local=dict(LOCALS)
-        local[varname]=independent
-        rhs=parse_expr(rhs_text,local_dict=local,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
-        guard_complexity(rhs)
-        equation=sp.Eq(sp.diff(function,independent,ode_order),rhs)
-        solution=sp.dsolve(equation,function)
-        return ('Differential equation solution',solution,[('Differential equation',equation),('Dependent function',function),('General solution',solution)])
-    m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
-    if m:
-        op=m.group(1); body=m.group(2)
-        args=[]; depth=0; start=0
-        for i,ch in enumerate(body):
-            if ch in '([': depth+=1
-            elif ch in ')]': depth-=1
-            elif ch==',' and depth==0: args.append(body[start:i].strip()); start=i+1
-        args.append(body[start:].strip())
-        if op=='dsolve':
-            if len(args)<2: raise ValueError("Use dsolve(diff(y(x), x) + y(x), y(x))")
-            func_match=regex.match(r'\s*([A-Za-z]\w*)\s*\(',args[1])
-            if not func_match: raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
-            func_name=func_match.group(1)
-            dependent=sp.Function(func_name)
-            dlocals=dict(LOCALS); dlocals[func_name]=dependent; dlocals['diff']=sp.diff
-            equation=parse_expr(args[0],local_dict=dlocals,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
-            derivatives=equation.atoms(sp.Derivative)
-            if any(len(der.variables)>6 for der in derivatives): raise ValueError("ODE order is limited to 6 to keep calculations responsive.")
-            func=parse_expr(args[1],local_dict=dlocals,global_dict=SAFE_GLOBALS,transformations=TRANS,evaluate=True)
-            if not isinstance(equation,sp.Equality): equation=sp.Eq(equation,0)
-            ans=sp.dsolve(equation,func)
-            return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
-        if op=='diff':
-            if len(args)>3: raise ValueError("Use diff(expression, variable, order), with order from 1 to 6.")
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
-            order=int(args[2]) if len(args)>2 else 1
-            if order<1 or order>6: raise ValueError("Derivative order must be between 1 and 6.")
-            guard_complexity(f)
-            if sp.count_ops(f)>250: raise ValueError("This expression is too large to differentiate safely.")
-            ans=sp.diff(f,v,order); return ('Differentiate with respect to '+str(v),ans,[('Input function',f),('Differentiation variable',v),('Derivative',ans)])
-        if op=='integrate':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
-            guard_complexity(f,80)
-            if len(args)>=4:
-                lo,hi=P(args[2]),P(args[3]); ans=sp.integrate(f,(v,lo,hi))
-                return ('Definite integral',ans,[('Integrand',f),('Bounds',sp.Tuple(lo,hi)),('Exact evaluation',ans)])
-            candidates=[f]
-            for transform in (lambda q:sp.simplify(q.rewrite(sp.tan)),lambda q:sp.trigsimp(q),lambda q:sp.simplify(sp.trigsimp(q)),lambda q:sp.cancel(sp.together(q)),lambda q:sp.expand_trig(q),lambda q:sp.fu(q)):
-                try:
-                    candidate=transform(f)
-                    if candidate not in candidates: candidates.append(candidate)
-                except Exception: pass
-            ans=sp.Integral(f,v)
-            for candidate in candidates:
-                try:
-                    trial=sp.integrate(candidate,v)
-                    if not trial.has(sp.Integral): ans=trial; break
-                except Exception: pass
-            if ans.has(sp.Integral):
-                try:
-                    trial=sp.integrals.heurisch.heurisch(f,v)
-                    if trial is not None and not trial.has(sp.Integral): ans=trial
-                except Exception: pass
-            if ans.has(sp.Integral):
-                return ('Indefinite integral — no antiderivative found',ans,[('Original integrand',f),('Methods attempted',sp.Symbol('trigonometric simplification, algebraic rewriting, expansion and heuristic integration')),('Status',sp.Symbol('No closed-form antiderivative was found. This integral is not marked as solved.'))])
-            return ('Indefinite integral',ans,[('Integrand',f),('Antiderivative',ans),('Constant of integration',sp.Symbol('C'))])
-        if op=='solve':
-            eq=args[0]
-            if '=' in eq: L,R=eq.split('=',1); expr=P(L)-P(R)
-            else: expr=P(eq)
-            v=P(args[1]) if len(args)>1 else next(iter(expr.free_symbols),x)
-            ans=sp.solve(expr,v)
-            return ('Solve for '+str(v),ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
-        if op=='limit':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0
-            guard_complexity(f)
-            ans=sp.limit(f,v,point); return ('Limit',ans,[('Expression',f),('Approach value',point),('Limit',ans)])
-        if op=='series':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0; order=int(args[3]) if len(args)>3 else 6
-            if order<1 or order>20: raise ValueError("Taylor series order must be between 1 and 20.")
-            if sp.count_ops(f)>250: raise ValueError("This expression is too large for a safe Taylor expansion.")
-            ans=sp.series(f,v,point,n=order); return ('Taylor series',ans,[('Function',f),('Expansion point',point),('Series',ans)])
-        if op in ('simplify','factor','expand'):
-            f=P(args[0]); guard_complexity(f,80); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
-        if op in ('det','inv','rank','eigenvals'):
-            M=P(args[0]); M=sp.Matrix(M) if isinstance(M,(list,tuple)) else M
-            if M.rows>8 or M.cols>8: raise ValueError("Matrix operations are limited to 8 × 8.")
-            if op=='det': ans=M.det()
-            elif op=='inv': ans=M.inv()
-            elif op=='rank': ans=M.rank()
-            else: ans=M.eigenvals()
-            return ('Matrix '+op,ans,[('Input matrix',M),('Result',ans)])
-        if op=='grad':
-            f=P(args[0]); vs=[P(vv) for vv in args[1:]] or sorted(f.free_symbols,key=str)
-            ans=sp.Matrix([sp.diff(f,vv) for vv in vs]); return ('Gradient',ans,[('Function',f),('Variables',sp.Tuple(*vs)),('Gradient vector',ans)])
-    if '=' in q:
-        L,R=q.split('=',1); expr=P(L)-P(R); v=sorted(expr.free_symbols,key=str)[0] if expr.free_symbols else x
-        ans=sp.solve(expr,v); return ('Equation solution',ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
-    ans=P(q)
-    if ans.free_symbols: ans=sp.simplify(ans)
-    return ('Evaluation / simplification',ans,[('Parsed expression',P(q)),('Result',ans)])
-def answer(q):
-    title,ans,steps=run(q)
-    plain=str(ans); tex=latex(ans)
-    if len(plain)>12000 or len(tex)>20000: raise ValueError("The result is too large to display safely. Try a simpler expression or a lower series order.")
-    rendered=[]
-    for k,v in steps:
-        step_plain=str(v); step_tex=latex(v)
-        if len(step_plain)>12000 or len(step_tex)>20000: raise ValueError("The working is too large to display safely.")
-        rendered.append({'label':str(k),'latex':step_tex,'plain':step_plain})
-    return {'title':title,'latex':tex,'plain':plain,'steps':rendered}
-`;
-async function boot(){
+const operations=[['d/dx','diff('],['∂ partial','partial('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
+function boot(){
  const status=$('engineStatus'),dot=$('engineDot');
- const timeout=(promise,label,ms=90000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check your connection and reload.')),ms))]);
+ if(solverWorker){solverWorker.terminate();solverWorker=null}
+ engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
-  if(typeof loadPyodide!=='function') throw new Error('Pyodide loader did not download. Allow access to cdn.jsdelivr.net, then reload.');
-  status.textContent='Downloading Python mathematics engine…';dot.className='dot';
-  py=await timeout(loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/'}),'Python engine download');
-  status.textContent='Loading SymPy algebra package…';
-  await timeout(py.loadPackage('sympy'),'SymPy package download');
-  status.textContent='Preparing symbolic solver…';
-  await timeout(py.runPythonAsync(pythonCode),'Solver initialization');
-  engineReady=true;status.textContent='SymPy symbolic engine ready';dot.className='dot ready';
- }catch(e){
-  engineReady=false;status.textContent='Math engine failed: '+String(e?.message||e).slice(0,110);
-  dot.className='dot bad';console.error('OmniMath startup error:',e);
- }
+  solverWorker=new Worker(new URL('./solver-worker.js',document.baseURI));
+  let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup is taking too long'}},90000);
+  solverWorker.onmessage=event=>{
+   const data=event.data||{};
+   if(data.type==='status'){status.textContent=data.message;return}
+   if(data.type==='ready'){clearTimeout(startupTimer);engineReady=true;status.textContent='SymPy symbolic engine ready';dot.className='dot ready';return}
+   if(data.type==='result'){clearTimeout(calculationTimer);calculationInProgress=false;$('calculate').disabled=false;render(data.result,data.expression);return}
+   if(data.type==='calculation-error'){clearTimeout(calculationTimer);calculationInProgress=false;$('calculate').disabled=false;$('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc(data.message||'Unknown calculation error')+'</div><p class="hint">Try a simpler expression or check the supported syntax.</p></div></section>';return}
+   if(data.type==='fatal'){clearTimeout(startupTimer);engineReady=false;dot.className='dot bad';status.textContent='Math engine failed: '+String(data.message||'worker error').slice(0,100);$('output').innerHTML='<section class="card error"><b>Mathematics engine failed.</b><p class="hint">'+esc(data.message||'Reload the page and check your connection.')+'</p></section>'}
+  };
+  solverWorker.onerror=event=>{engineReady=false;dot.className='dot bad';status.textContent='Math worker failed to load';console.error(event)};
+ }catch(e){engineReady=false;dot.className='dot bad';status.textContent='Web Worker unavailable';console.error(e)}
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
@@ -315,7 +134,8 @@ function expressionTex(q){
   const m=q.match(/^\s*(diff|integrate|limit|solve|simplify|factor|expand)\s*\((.*)\)\s*$/s);
  if(!m)return mathTex(q);
  const op=m[1],args=splitPreviewArgs(m[2]),f=mathTex(args[0]||''),v=mathTex(args[1]||'x');
- if(op==='diff')return '\\frac{d}{d'+v+'}\\left('+f+'\\right)';
+ if(op==='diff'){const order=Math.max(1,Math.min(6,Number(args[2]||1)));return order===1?'\\frac{d}{d'+v+'}\\left('+f+'\\right)':'\\frac{d^{'+order+'}}{d'+v+'^{'+order+'}}\\left('+f+'\\right)'}
+ if(op==='partial'){const vars=args.slice(1).map(mathTex);if(!vars.length)return '\\operatorname{partial}\\left('+f+'\\right)';const top=vars.length===1?'\\partial '+f:'\\partial^{'+vars.length+'} '+f;return '\\frac{'+top+'}{'+vars.map(vv=>'\\partial '+vv).join('')+'}';
  if(op==='integrate')return '\\int '+f+'\\,d'+v;
  if(op==='limit')return '\\lim_{'+v+'\\to '+mathTex(args[2]||'0')+'}\\left('+f+'\\right)';
  if(op==='solve')return args.map(mathTex).join(' ,\\quad ');
@@ -326,29 +146,23 @@ function preview(){
  $('preview').textContent=q?'\\('+expressionTex(q)+'\\)':'';
  if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{});
 }
-let calculationInProgress=false;
 async function calculate(qOverride){
  const q=(qOverride!==undefined?qOverride:$('input').value).trim();
  if(q.length>320){$('output').innerHTML='<section class="card error">Expression is too long. The limit is 320 characters.</section>';return}
- if(calculationInProgress)return;
  if(!q){$('output').innerHTML='<section class="card error">Enter a mathematical expression first.</section>';return}
- if(!engineReady){$('output').innerHTML='<section class="card error"><b>Mathematics engine is not ready.</b><p class="hint">Wait until the top status says “SymPy symbolic engine ready”. If it says unavailable, check your internet connection and reload.</p></section>';return}
- $('output').innerHTML='<section class="card"><div class="row"><span class="dot ready"></span><b>Calculating symbolically…</b></div><p class="hint">Please wait while the mathematics engine works.</p></section>';
- $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
+ if(calculationInProgress)return;
+ if(!engineReady||!solverWorker){$('output').innerHTML='<section class="card error"><b>Mathematics engine is not ready.</b><p class="hint">Wait until the status says “SymPy symbolic engine ready”. If it fails, reload and check your internet connection.</p></section>';return}
  calculationInProgress=true;$('calculate').disabled=true;
- try{
-  py.globals.set('USER_EXPRESSION',q);
-  const obj=await py.runPythonAsync('answer(USER_EXPRESSION)');
-  const data=obj.toJs({dict_converter:Object.fromEntries});
-  obj.destroy();
-  render(data,q);
-  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
- }catch(e){
-  $('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc((String(e).match(/(?:ValueError|TypeError|SyntaxError|NotImplementedError|ZeroDivisionError):[^\n]*/g)||[String(e).split('\n').filter(Boolean).slice(-1)[0]||'Unknown error']).slice(-1)[0].slice(0,260))+'</div><p class="hint">Check the expression syntax. Supported commands include diff, integrate, solve, dsolve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></div></section>';
-  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
- }finally{
-  calculationInProgress=false;$('calculate').disabled=false;
- }
+ $('output').innerHTML='<section class="card"><div class="row"><span class="dot ready"></span><b>Calculating in the background…</b></div><p class="hint">The page remains responsive while the symbolic engine works.</p></section>';
+ calculationTimer=setTimeout(()=>{
+  if(!calculationInProgress)return;
+  calculationInProgress=false;$('calculate').disabled=false;engineReady=false;
+  if(solverWorker){solverWorker.terminate();solverWorker=null}
+  $('engineDot').className='dot bad';$('engineStatus').textContent='Calculation timed out — restarting engine';
+  $('output').innerHTML='<section class="card error"><b>Calculation timed out.</b><p class="hint">The solver stopped this calculation to keep the page responsive. Try a simpler form; the engine is restarting.</p></section>';
+  boot();
+ },45000);
+ solverWorker.postMessage({type:'calculate',expression:q});
 }
 function render(data,q){
  lastAnswer=data.plain;
