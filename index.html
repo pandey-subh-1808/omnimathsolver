@@ -177,13 +177,21 @@ def answer(q):
     return {'title':title,'latex':latex(ans),'plain':str(ans),'steps':[{'label':str(k),'latex':latex(v),'plain':str(v)} for k,v in steps]}
 `;
 async function boot(){
+ const status=$('engineStatus'),dot=$('engineDot');
+ const timeout=(promise,label,ms=90000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check your connection and reload.')),ms))]);
  try{
-  $('engineStatus').textContent='Loading SymPy engine…';
-  py=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/'});
-  await py.loadPackage('sympy');
-  await py.runPythonAsync(pythonCode);
-  engineReady=true;$('engineStatus').textContent='SymPy symbolic engine ready';$('engineDot').className='dot ready';
- }catch(e){$('engineStatus').textContent='Engine unavailable — check internet';$('engineDot').className='dot bad';console.error(e)}
+  if(typeof loadPyodide!=='function') throw new Error('Pyodide loader did not download. Allow access to cdn.jsdelivr.net, then reload.');
+  status.textContent='Downloading Python mathematics engine…';dot.className='dot';
+  py=await timeout(loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/'}),'Python engine download');
+  status.textContent='Loading SymPy algebra package…';
+  await timeout(py.loadPackage('sympy'),'SymPy package download');
+  status.textContent='Preparing symbolic solver…';
+  await timeout(py.runPythonAsync(pythonCode),'Solver initialization');
+  engineReady=true;status.textContent='SymPy symbolic engine ready';dot.className='dot ready';
+ }catch(e){
+  engineReady=false;status.textContent='Math engine failed: '+String(e?.message||e).slice(0,110);
+  dot.className='dot bad';console.error('OmniMath startup error:',e);
+ }
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
