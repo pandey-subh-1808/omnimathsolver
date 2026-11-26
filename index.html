@@ -83,7 +83,6 @@ const pythonCode = String.raw`
 import re as regex
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor, function_exponentiation
-from sympy import *
 x,y,z,t,s,a,b,c,n = sp.symbols('x y z t s a b c n')
 TRANS = standard_transformations + (implicit_multiplication_application, convert_xor, function_exponentiation)
 LOCALS = {k:getattr(sp,k) for k in dir(sp) if not k.startswith('_')}
@@ -96,10 +95,21 @@ def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
     # Friendly first-order ODE shorthand: dsolve(diff(u,x)) = sin(x)
-    shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)\s*=\s*(.+)    m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
+    shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)\s*=\s*(.+)$',q,regex.S)
+    if shorthand:
+        fname,varname,rhs_text=shorthand.groups()
+        independent=sp.Symbol(varname)
+        dependent=sp.Function(fname)
+        function=dependent(independent)
+        local=dict(LOCALS)
+        local[varname]=independent
+        rhs=parse_expr(rhs_text,local_dict=local,transformations=TRANS,evaluate=True)
+        equation=sp.Eq(sp.diff(function,independent),rhs)
+        solution=sp.dsolve(equation,function)
+        return ('Differential equation solution',solution,[('Differential equation',equation),('Dependent function',function),('General solution',solution)])
+    m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
     if m:
         op=m.group(1); body=m.group(2)
-        # split top-level comma arguments
         args=[]; depth=0; start=0
         for i,ch in enumerate(body):
             if ch in '([': depth+=1
@@ -107,73 +117,48 @@ def run(q):
             elif ch==',' and depth==0: args.append(body[start:i].strip()); start=i+1
         args.append(body[start:].strip())
         if op=='dsolve':
-            if len(args)<2:
-                raise ValueError("Use dsolve(diff(y(x), x) + y(x), y(x))")
-            # Parse the requested dependent variable as a SymPy function, not a scalar symbol.
+            if len(args)<2: raise ValueError("Use dsolve(diff(y(x), x) + y(x), y(x))")
             func_match=regex.match(r'\s*([A-Za-z]\w*)\s*\(',args[1])
-            if not func_match:
-                raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
+            if not func_match: raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
             func_name=func_match.group(1)
             dependent=sp.Function(func_name)
-            dlocals=dict(LOCALS)
-            dlocals[func_name]=dependent
+            dlocals=dict(LOCALS); dlocals[func_name]=dependent
             equation=parse_expr(args[0],local_dict=dlocals,transformations=TRANS,evaluate=True)
             func=parse_expr(args[1],local_dict=dlocals,transformations=TRANS,evaluate=True)
-            if not isinstance(equation,sp.Equality):
-                equation=sp.Eq(equation,0)
+            if not isinstance(equation,sp.Equality): equation=sp.Eq(equation,0)
             ans=sp.dsolve(equation,func)
             return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
         if op=='diff':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
-            ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans, [('Input function',f),('Differentiation variable',v),('Derivative',ans)])
+            ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans,[('Input function',f),('Differentiation variable',v),('Derivative',ans)])
         if op=='integrate':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
             if len(args)>=4:
                 lo,hi=P(args[2]),P(args[3]); ans=sp.integrate(f,(v,lo,hi))
                 return ('Definite integral',ans,[('Integrand',f),('Bounds',sp.Tuple(lo,hi)),('Exact evaluation',ans)])
-            # Try several symbolic rewrites and fallback methods before declaring failure.
             candidates=[f]
-            for transform in (
-                lambda q: sp.simplify(q.rewrite(sp.tan)),
-                lambda q: sp.trigsimp(q),
-                lambda q: sp.simplify(sp.trigsimp(q)),
-                lambda q: sp.cancel(sp.together(q)),
-                lambda q: sp.expand_trig(q),
-                lambda q: sp.fu(q)
-            ):
+            for transform in (lambda q:sp.simplify(q.rewrite(sp.tan)),lambda q:sp.trigsimp(q),lambda q:sp.simplify(sp.trigsimp(q)),lambda q:sp.cancel(sp.together(q)),lambda q:sp.expand_trig(q),lambda q:sp.fu(q)):
                 try:
                     candidate=transform(f)
-                    if candidate not in candidates:
-                        candidates.append(candidate)
-                except Exception:
-                    pass
+                    if candidate not in candidates: candidates.append(candidate)
+                except Exception: pass
             ans=sp.Integral(f,v)
             for candidate in candidates:
                 try:
                     trial=sp.integrate(candidate,v,meijerg=False)
-                    if not trial.has(sp.Integral):
-                        ans=trial
-                        break
-                except Exception:
-                    continue
+                    if not trial.has(sp.Integral): ans=trial; break
+                except Exception: pass
             if ans.has(sp.Integral):
                 try:
                     trial=sp.integrals.heurisch.heurisch(f,v)
-                    if trial is not None and not trial.has(sp.Integral):
-                        ans=trial
-                except Exception:
-                    pass
+                    if trial is not None and not trial.has(sp.Integral): ans=trial
+                except Exception: pass
             if ans.has(sp.Integral):
-                return ('Indefinite integral — no antiderivative found',ans,[
-                    ('Original integrand',f),
-                    ('Methods attempted',sp.Symbol('trigonometric simplification, algebraic rewriting, expansion and heuristic integration')),
-                    ('Status',sp.Symbol('No closed-form antiderivative was found. This integral is not marked as solved.'))
-                ])
+                return ('Indefinite integral — no antiderivative found',ans,[('Original integrand',f),('Methods attempted',sp.Symbol('trigonometric simplification, algebraic rewriting, expansion and heuristic integration')),('Status',sp.Symbol('No closed-form antiderivative was found. This integral is not marked as solved.'))])
             return ('Indefinite integral',ans,[('Integrand',f),('Antiderivative',ans),('Constant of integration',sp.Symbol('C'))])
         if op=='solve':
             eq=args[0]
-            if '=' in eq:
-                L,R=eq.split('=',1); expr=P(L)-P(R)
+            if '=' in eq: L,R=eq.split('=',1); expr=P(L)-P(R)
             else: expr=P(eq)
             v=P(args[1]) if len(args)>1 else next(iter(expr.free_symbols),x)
             ans=sp.solve(expr,v)
@@ -265,196 +250,6 @@ function init(){
  $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='<section class="card"><b>Solution &amp; working</b><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section>';preview()};
  $('backspace').onclick=()=>{const t=$('input'),a=t.selectionStart,b=t.selectionEnd;if(a===b&&a>0)t.setRangeText('',a-1,b,'end');else t.setRangeText('',a,b,'end');preview();t.focus()};
  $('themeBtn').onclick=()=>{const dark=document.documentElement.dataset.theme!=='dark';document.documentElement.dataset.theme=dark?'dark':'light';$('themeBtn').setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');$('themeBtn').textContent=dark?'☀':'◐';};
- $('clearHistory').onclick=()=>{history=[];drawHistory()};
- $('copy').onclick=()=>{if(lastAnswer)navigator.clipboard?.writeText(lastAnswer)};
- keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
- operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
- samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();calculate()};$('examples').append(b)});
- drawHistory();boot();
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-})();
-</script></body></html>,q,regex.S)
-    if shorthand:
-        fname,varname,rhs_text=shorthand.groups()
-        independent=sp.Symbol(varname)
-        dependent=sp.Function(fname)
-        function=dependent(independent)
-        local=dict(LOCALS)
-        local[varname]=independent
-        rhs=parse_expr(rhs_text,local_dict=local,transformations=TRANS,evaluate=True)
-        equation=sp.Eq(sp.diff(function,independent),rhs)
-        solution=sp.dsolve(equation,function)
-        return ('Differential equation solution',solution,[('Differential equation',equation),('Dependent function',function),('General solution',solution)])
-    m=regex.match(r'^(diff|integrate|solve|dsolve|limit|series|simplify|factor|expand|det|inv|rank|eigenvals|grad)\s*\((.*)\)$',q,regex.S)
-    if m:
-        op=m.group(1); body=m.group(2)
-        # split top-level comma arguments
-        args=[]; depth=0; start=0
-        for i,ch in enumerate(body):
-            if ch in '([': depth+=1
-            elif ch in ')]': depth-=1
-            elif ch==',' and depth==0: args.append(body[start:i].strip()); start=i+1
-        args.append(body[start:].strip())
-        if op=='dsolve':
-            if len(args)<2:
-                raise ValueError("Use dsolve(diff(y(x), x) + y(x), y(x))")
-            # Parse the requested dependent variable as a SymPy function, not a scalar symbol.
-            func_match=regex.match(r'\s*([A-Za-z]\w*)\s*\(',args[1])
-            if not func_match:
-                raise ValueError("Use function notation for the dependent variable, e.g. y(x).")
-            func_name=func_match.group(1)
-            dependent=sp.Function(func_name)
-            dlocals=dict(LOCALS)
-            dlocals[func_name]=dependent
-            equation=parse_expr(args[0],local_dict=dlocals,transformations=TRANS,evaluate=True)
-            func=parse_expr(args[1],local_dict=dlocals,transformations=TRANS,evaluate=True)
-            if not isinstance(equation,sp.Equality):
-                equation=sp.Eq(equation,0)
-            ans=sp.dsolve(equation,func)
-            return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
-        if op=='diff':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
-            ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans, [('Input function',f),('Differentiation variable',v),('Derivative',ans)])
-        if op=='integrate':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
-            if len(args)>=4:
-                lo,hi=P(args[2]),P(args[3]); ans=sp.integrate(f,(v,lo,hi))
-                return ('Definite integral',ans,[('Integrand',f),('Bounds',sp.Tuple(lo,hi)),('Exact evaluation',ans)])
-            # Try several symbolic rewrites and fallback methods before declaring failure.
-            candidates=[f]
-            for transform in (
-                lambda q: sp.simplify(q.rewrite(sp.tan)),
-                lambda q: sp.trigsimp(q),
-                lambda q: sp.simplify(sp.trigsimp(q)),
-                lambda q: sp.cancel(sp.together(q)),
-                lambda q: sp.expand_trig(q),
-                lambda q: sp.fu(q)
-            ):
-                try:
-                    candidate=transform(f)
-                    if candidate not in candidates:
-                        candidates.append(candidate)
-                except Exception:
-                    pass
-            ans=sp.Integral(f,v)
-            for candidate in candidates:
-                try:
-                    trial=sp.integrate(candidate,v,meijerg=False)
-                    if not trial.has(sp.Integral):
-                        ans=trial
-                        break
-                except Exception:
-                    continue
-            if ans.has(sp.Integral):
-                try:
-                    trial=sp.integrals.heurisch.heurisch(f,v)
-                    if trial is not None and not trial.has(sp.Integral):
-                        ans=trial
-                except Exception:
-                    pass
-            if ans.has(sp.Integral):
-                return ('Indefinite integral — no antiderivative found',ans,[
-                    ('Original integrand',f),
-                    ('Methods attempted',sp.Symbol('trigonometric simplification, algebraic rewriting, expansion and heuristic integration')),
-                    ('Status',sp.Symbol('No closed-form antiderivative was found. This integral is not marked as solved.'))
-                ])
-            return ('Indefinite integral',ans,[('Integrand',f),('Antiderivative',ans),('Constant of integration',sp.Symbol('C'))])
-        if op=='solve':
-            eq=args[0]
-            if '=' in eq:
-                L,R=eq.split('=',1); expr=P(L)-P(R)
-            else: expr=P(eq)
-            v=P(args[1]) if len(args)>1 else next(iter(expr.free_symbols),x)
-            ans=sp.solve(expr,v)
-            return ('Solve for '+str(v),ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
-        if op=='limit':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0
-            ans=sp.limit(f,v,point); return ('Limit',ans,[('Expression',f),('Approach value',point),('Limit',ans)])
-        if op=='series':
-            f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0; order=int(args[3]) if len(args)>3 else 6
-            ans=sp.series(f,v,point,n=order); return ('Taylor series',ans,[('Function',f),('Expansion point',point),('Series',ans)])
-        if op in ('simplify','factor','expand'):
-            f=P(args[0]); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
-        if op in ('det','inv','rank','eigenvals'):
-            M=P(args[0]); M=sp.Matrix(M) if isinstance(M,(list,tuple)) else M
-            if op=='det': ans=M.det()
-            elif op=='inv': ans=M.inv()
-            elif op=='rank': ans=M.rank()
-            else: ans=M.eigenvals()
-            return ('Matrix '+op,ans,[('Input matrix',M),('Result',ans)])
-        if op=='grad':
-            f=P(args[0]); vs=[P(vv) for vv in args[1:]] or sorted(f.free_symbols,key=str)
-            ans=sp.Matrix([sp.diff(f,vv) for vv in vs]); return ('Gradient',ans,[('Function',f),('Variables',sp.Tuple(*vs)),('Gradient vector',ans)])
-    if '=' in q:
-        L,R=q.split('=',1); expr=P(L)-P(R); v=sorted(expr.free_symbols,key=str)[0] if expr.free_symbols else x
-        ans=sp.solve(expr,v); return ('Equation solution',ans,[('Equation reduced to zero',expr),('Solutions',sp.FiniteSet(*ans))])
-    ans=P(q)
-    if ans.free_symbols: ans=sp.simplify(ans)
-    return ('Evaluation / simplification',ans,[('Parsed expression',P(q)),('Result',ans)])
-def answer(q):
-    title,ans,steps=run(q)
-    return {'title':title,'latex':latex(ans),'plain':str(ans),'steps':[{'label':str(k),'latex':latex(v),'plain':str(v)} for k,v in steps]}
-`;
-async function boot(){
- const status=$('engineStatus'),dot=$('engineDot');
- const timeout=(promise,label,ms=90000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+Math.round(ms/1000)+' seconds. Check your connection and reload.')),ms))]);
- try{
-  if(typeof loadPyodide!=='function') throw new Error('Pyodide loader did not download. Allow access to cdn.jsdelivr.net, then reload.');
-  status.textContent='Downloading Python mathematics engine…';dot.className='dot';
-  py=await timeout(loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/'}),'Python engine download');
-  status.textContent='Loading SymPy algebra package…';
-  await timeout(py.loadPackage('sympy'),'SymPy package download');
-  status.textContent='Preparing symbolic solver…';
-  await timeout(py.runPythonAsync(pythonCode),'Solver initialization');
-  engineReady=true;status.textContent='SymPy symbolic engine ready';dot.className='dot ready';
- }catch(e){
-  engineReady=false;status.textContent='Math engine failed: '+String(e?.message||e).slice(0,110);
-  dot.className='dot bad';console.error('OmniMath startup error:',e);
- }
-}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
-function preview(){const q=$('input').value.trim();$('preview').textContent=q?'\\('+q+'\\)':'';if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{})}
-async function calculate(qOverride){
- const q=(qOverride!==undefined?qOverride:$('input').value).trim();
- if(!q){$('output').innerHTML='<section class="card error">Enter a mathematical expression first.</section>';return}
- if(!engineReady){$('output').innerHTML='<section class="card error"><b>Mathematics engine is not ready.</b><p class="hint">Wait until the top status says “SymPy symbolic engine ready”. If it says unavailable, check your internet connection and reload.</p></section>';return}
- $('output').innerHTML='<section class="card"><div class="row"><span class="dot ready"></span><b>Calculating symbolically…</b></div><p class="hint">Please wait while the mathematics engine works.</p></section>';
- $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
- try{
-  py.globals.set('USER_EXPRESSION',q);
-  const obj=await py.runPythonAsync('answer(USER_EXPRESSION)');
-  const data=obj.toJs({dict_converter:Object.fromEntries});
-  obj.destroy();
-  render(data,q);
-  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
- }catch(e){
-  $('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc((String(e).match(/(?:ValueError|TypeError|SyntaxError):[^\\n]*/g)||[String(e).split('\\n').filter(Boolean).slice(-1)[0]||'Unknown error']).slice(-1)[0].slice(0,260))+'</div><p class="hint">Check the expression syntax. Supported commands include diff, integrate, solve, dsolve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></div></section>';
-  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
- }
-}
-function render(data,q){
- lastAnswer=data.plain;
- const notSolved=data.title.includes('no antiderivative found');
- let html='<section class="card"><div class="row" style="justify-content:space-between"><div class="section-title" style="margin:0">'+(notSolved?'Integration status':'Result')+'</div><span class="pill">'+esc(data.title)+'</span></div>';
- if(notSolved) html+='<div class="error"><b>Not solved.</b> The engine tried several symbolic transformations and integration strategies but could not find a closed-form antiderivative. It will not present the unevaluated integral as a solution.</div>';
- html+='<div class="result'+(notSolved?' unresolved':'')+'">\\['+data.latex+'\\]</div><div class="section-title">Mathematical working</div>';
- data.steps.forEach((s,i)=>{const plainStep=(s.label==='Methods attempted'||s.label==='Status');html+='<div class="step"><div class="num">'+(i+1)+'</div><div class="step-body"><b>'+esc(s.label)+'</b>'+(plainStep?'<p class="hint">'+esc(s.plain)+'</p>':'<div>\\['+s.latex+'\\]</div>')+'</div></div>'});
- html+='</section>';$('output').innerHTML=html;
- if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('output')]).catch(()=>{});
- history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);drawHistory();
-}
-function drawHistory(){
- $('history').innerHTML=history.length?history.map((h,i)=>'<div class="history-item" data-i="'+i+'"><span>'+esc(h.q)+'</span><span class="hint">'+esc(h.answer.slice(0,65))+'</span></div>').join(''):'<p class="hint">Your recent calculations will appear here.</p>';
- $('history').querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{$('input').value=history[+el.dataset.i].q;preview();calculate()});
-}
-function init(){
- $('calculate').onclick=()=>calculate();$('input').addEventListener('input',preview);
- $('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();calculate()}});
- $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='<section class="card"><b>Solution &amp; working</b><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section>';preview()};
- $('backspace').onclick=()=>{const t=$('input'),a=t.selectionStart,b=t.selectionEnd;if(a===b&&a>0)t.setRangeText('',a-1,b,'end');else t.setRangeText('',a,b,'end');preview();t.focus()};
- $('themeBtn').onclick=()=>document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';
  $('clearHistory').onclick=()=>{history=[];drawHistory()};
  $('copy').onclick=()=>{if(lastAnswer)navigator.clipboard?.writeText(lastAnswer)};
  keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
