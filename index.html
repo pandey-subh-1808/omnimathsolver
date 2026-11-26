@@ -85,15 +85,52 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor, function_exponentiation
 x,y,z,t,s,a,b,c,n = sp.symbols('x y z t s a b c n')
 TRANS = standard_transformations + (implicit_multiplication_application, convert_xor, function_exponentiation)
-LOCALS = {k:getattr(sp,k) for k in dir(sp) if not k.startswith('_')}
-LOCALS.update({'pi':sp.pi,'e':sp.E,'ln':sp.log,'log10':lambda q:sp.log(q,10),'Ans':sp.Integer(0)})
+# Deliberately small parser namespace: never expose the entire SymPy module.
+LOCALS = {
+    'pi':sp.pi, 'e':sp.E, 'ln':sp.log, 'log':sp.log, 'log10':lambda q:sp.log(q,10),
+    'sin':sp.sin, 'cos':sp.cos, 'tan':sp.tan, 'asin':sp.asin, 'acos':sp.acos, 'atan':sp.atan,
+    'sinh':sp.sinh, 'cosh':sp.cosh, 'tanh':sp.tanh, 'exp':sp.exp, 'sqrt':sp.sqrt,
+    'abs':sp.Abs, 'Abs':sp.Abs, 'factorial':sp.factorial, 'Matrix':sp.Matrix,
+    'Ans':sp.Integer(0)
+}
+ALLOWED_CALLS = {'dsolve','diff','integrate','solve','limit','series','simplify','factor','expand',
+                 'det','inv','rank','eigenvals','grad','sin','cos','tan','asin','acos','atan',
+                 'sinh','cosh','tanh','exp','sqrt','log','ln','log10','abs','Abs','factorial','Matrix'}
+def validate_input(q):
+    if len(q)>320: raise ValueError("Expression is too long (maximum 320 characters).")
+    if any(token in q for token in ('__','.',"'",'"',';','{','}','\\',':')):
+        raise ValueError("Unsupported syntax. Enter a mathematical expression, not Python code.")
+    if not regex.fullmatch(r'[A-Za-z0-9_+\\-*/^().,\\[\\]=\\s]+',q):
+        raise ValueError("Unsupported character in expression.")
+    if len(regex.findall(r'[A-Za-z][A-Za-z0-9_]*|\\d+|[^\\s]',q))>120:
+        raise ValueError("Expression is too complex (maximum 120 tokens).")
+    if max(q.count('(')-q.count(')'),q.count('[')-q.count(']'))>0:
+        raise ValueError("Check the closing brackets.")
+    depth=0
+    for ch in q:
+        if ch in '([':
+            depth+=1
+            if depth>16: raise ValueError("Expression nesting is too deep (maximum 16 levels).")
+        elif ch in ')]':
+            depth-=1
+            if depth<0: raise ValueError("Check the brackets.")
+    if depth: raise ValueError("Check the closing brackets.")
+    if regex.search(r'\\b([A-Za-z][A-Za-z0-9_]*)\\s*\\(',q):
+        for name in regex.findall(r'\\b([A-Za-z][A-Za-z0-9_]*)\\s*\\(',q):
+            if name not in ALLOWED_CALLS: raise ValueError("Function '"+name+"' is not supported.")
+    for number in regex.findall(r'\\b\\d+\\b',q):
+        if len(number)>12: raise ValueError("Numeric literals are limited to 12 digits.")
+    for power in regex.findall(r'(?:\\^|\\*\\*)\\s*(\\d+)',q):
+        if int(power)>20: raise ValueError("Powers above 20 are blocked to prevent excessive symbolic expansion.")
 def P(q):
     q=q.strip()
     if not q: raise ValueError("Enter an expression.")
+    validate_input(q)
     return parse_expr(q, local_dict=LOCALS, transformations=TRANS, evaluate=True)
 def latex(q): return sp.latex(q)
 def run(q):
     q=q.strip()
+    validate_input(q)
     # Friendly first-order ODE shorthand: dsolve(diff(u,x)) = sin(x)
     shorthand=regex.match(r'^dsolve\s*\(\s*diff\s*\(\s*([A-Za-z]\w*)\s*,\s*([A-Za-z]\w*)\s*\)\s*\)(?:\s*=\s*(.+))?$',q,regex.S)
     if shorthand:
@@ -130,7 +167,9 @@ def run(q):
             ans=sp.dsolve(equation,func)
             return ('Differential equation solution',ans,[('Differential equation',equation),('Dependent function',func),('General solution',ans)])
         if op=='diff':
+            if len(args)>2: raise ValueError("Use diff(expression, variable). Repeated derivative orders are capped; apply one derivative at a time.")
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
+            if sp.count_ops(f)>250: raise ValueError("This expression is too large to differentiate safely.")
             ans=sp.diff(f,v); return ('Differentiate with respect to '+str(v),ans,[('Input function',f),('Differentiation variable',v),('Derivative',ans)])
         if op=='integrate':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x)
@@ -169,11 +208,14 @@ def run(q):
             ans=sp.limit(f,v,point); return ('Limit',ans,[('Expression',f),('Approach value',point),('Limit',ans)])
         if op=='series':
             f=P(args[0]); v=P(args[1]) if len(args)>1 else next(iter(f.free_symbols),x); point=P(args[2]) if len(args)>2 else 0; order=int(args[3]) if len(args)>3 else 6
+            if order<1 or order>20: raise ValueError("Taylor series order must be between 1 and 20.")
+            if sp.count_ops(f)>250: raise ValueError("This expression is too large for a safe Taylor expansion.")
             ans=sp.series(f,v,point,n=order); return ('Taylor series',ans,[('Function',f),('Expansion point',point),('Series',ans)])
         if op in ('simplify','factor','expand'):
             f=P(args[0]); ans=getattr(sp,op)(f); return (op.title(),ans,[('Input',f),(op.title()+' result',ans)])
         if op in ('det','inv','rank','eigenvals'):
             M=P(args[0]); M=sp.Matrix(M) if isinstance(M,(list,tuple)) else M
+            if M.rows>8 or M.cols>8: raise ValueError("Matrix operations are limited to 8 × 8.")
             if op=='det': ans=M.det()
             elif op=='inv': ans=M.inv()
             elif op=='rank': ans=M.rank()
@@ -243,12 +285,16 @@ function preview(){
  $('preview').textContent=q?'\\('+expressionTex(q)+'\\)':'';
  if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{});
 }
+let calculationInProgress=false;
 async function calculate(qOverride){
  const q=(qOverride!==undefined?qOverride:$('input').value).trim();
+ if(q.length>320){$('output').innerHTML='<section class="card error">Expression is too long. The limit is 320 characters.</section>';return}
+ if(calculationInProgress)return;
  if(!q){$('output').innerHTML='<section class="card error">Enter a mathematical expression first.</section>';return}
  if(!engineReady){$('output').innerHTML='<section class="card error"><b>Mathematics engine is not ready.</b><p class="hint">Wait until the top status says “SymPy symbolic engine ready”. If it says unavailable, check your internet connection and reload.</p></section>';return}
  $('output').innerHTML='<section class="card"><div class="row"><span class="dot ready"></span><b>Calculating symbolically…</b></div><p class="hint">Please wait while the mathematics engine works.</p></section>';
  $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
+ calculationInProgress=true;$('calculate').disabled=true;
  try{
   py.globals.set('USER_EXPRESSION',q);
   const obj=await py.runPythonAsync('answer(USER_EXPRESSION)');
@@ -259,6 +305,8 @@ async function calculate(qOverride){
  }catch(e){
   $('output').innerHTML='<section class="card"><div class="error"><b>Could not evaluate this input.</b><div>'+esc((String(e).match(/(?:ValueError|TypeError|SyntaxError):[^\\n]*/g)||[String(e).split('\\n').filter(Boolean).slice(-1)[0]||'Unknown error']).slice(-1)[0].slice(0,260))+'</div><p class="hint">Check the expression syntax. Supported commands include diff, integrate, solve, dsolve, limit, series, simplify, factor, expand, det, inv, rank and eigenvals.</p></div></section>';
   $('output').scrollIntoView({behavior:'smooth',block:'nearest'});
+ }finally{
+  calculationInProgress=false;$('calculate').disabled=false;
  }
 }
 function render(data,q){
@@ -273,8 +321,17 @@ function render(data,q){
  history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);drawHistory();
 }
 function drawHistory(){
- $('history').innerHTML=history.length?history.map((h,i)=>'<div class="history-item" data-i="'+i+'"><span>'+esc(h.q)+'</span><span class="hint">'+esc(h.answer.slice(0,65))+'</span></div>').join(''):'<p class="hint">Your recent calculations will appear here.</p>';
- $('history').querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{$('input').value=history[+el.dataset.i].q;preview();calculate()});
+ const host=$('history');host.replaceChildren();
+ if(!history.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='Your recent calculations will appear here.';host.append(empty);return}
+ history.forEach((item,index)=>{
+  const row=document.createElement('div');row.className='history-item';row.tabIndex=0;row.setAttribute('role','button');
+  const query=document.createElement('span');query.textContent=item.q;
+  const answer=document.createElement('span');answer.className='hint';answer.textContent=item.answer.slice(0,65);
+  row.append(query,answer);
+  const restore=()=>{$('input').value=history[index].q;preview();calculate()};
+  row.addEventListener('click',restore);row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();restore()}});
+  host.append(row);
+ });
 }
 function init(){
  $('calculate').onclick=()=>calculate();$('input').addEventListener('input',preview);
