@@ -17,7 +17,7 @@
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
 <section class="card">
 <div class="section-title">Enter a mathematical expression</div>
-<textarea id="input" spellcheck="false" placeholder="Examples:\n dsolve(diff(y(x),x) + y(x), y(x))\n integrate(sin(x), x)\n diff(x^3*sin(x), x)\n solve(x^2 - 5*x + 6 = 0, x)"></textarea>
+<textarea id="input" spellcheck="false" placeholder="Examples:&#10;dsolve(diff(y(x),x) + y(x), y(x))&#10;integrate(sin(x), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
 <div class="section-title">Quick operations</div><div id="operations" class="row"></div>
 <div class="section-title">Scientific keypad</div><div id="keypad" class="keypad"></div>
@@ -44,7 +44,8 @@ const samples=[
 ['Matrix inverse','inv([[2,1],[5,3]])'],
 ['Simplify','simplify((x^2-1)/(x-1))'],
 ['Factor','factor(x^3 - 6*x^2 + 11*x - 6)'],
-['Differential equation','dsolve(diff(u,x)) = sin(x)'],\n['Differential equation','dsolve(diff(y(x),x) + y(x), y(x))']
+['Differential equation','dsolve(diff(u,x)) = sin(x)'],
+['Differential equation','dsolve(diff(y(x),x) + y(x), y(x))']
 ];
 const keys=['7','8','9','/','(',')','4','5','6','*','^','sqrt(','1','2','3','-','pi','e','0','.','+','sin(','cos(','tan(','ln(','log(','abs(','asin(','acos(','atan(','i','!','Ans'];
 const operations=[['d/dx','diff('],['∂ partial','diff('],['∫ integral','integrate('],['Limit','limit('],['Solve','solve('],['Series','series('],['Factor','factor('],['Simplify','simplify(']];
