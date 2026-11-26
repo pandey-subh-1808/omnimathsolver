@@ -135,7 +135,7 @@ function expressionTex(q){
  if(!m)return mathTex(q);
  const op=m[1],args=splitPreviewArgs(m[2]),f=mathTex(args[0]||''),v=mathTex(args[1]||'x');
  if(op==='diff'){const order=Math.max(1,Math.min(12,Number(args[2]||1)));return order===1?'\\frac{d}{d'+v+'}\\left('+f+'\\right)':'\\frac{d^{'+order+'}}{d'+v+'^{'+order+'}}\\left('+f+'\\right)'}
- if(op==='partial'){const vars=args.slice(1).map(mathTex);if(!vars.length)return '\\operatorname{partial}\\left('+f+'\\right)';const top=vars.length===1?'\\partial '+f:'\\partial^{'+vars.length+'} '+f;return '\\frac{'+top+'}{'+vars.map(vv=>'\\partial '+vv).join('')+'}';
+ if(op==='partial'){const vars=args.slice(1).map(mathTex);if(!vars.length)return '\\operatorname{partial}\\left('+f+'\\right)';const top=vars.length===1?'\\partial '+f:'\\partial^{'+vars.length+'} '+f;return '\\frac{'+top+'}{'+vars.map(vv=>'\\partial '+vv).join('')+'}';}
  if(op==='integrate')return '\\int '+f+'\\,d'+v;
  if(op==='limit')return '\\lim_{'+v+'\\to '+mathTex(args[2]||'0')+'}\\left('+f+'\\right)';
  if(op==='solve')return args.map(mathTex).join(' ,\\quad ');
