@@ -210,7 +210,33 @@ async function boot(){
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
-function preview(){const q=$('input').value.trim();$('preview').textContent=q?'\\('+q+'\\)':'';if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{})}
+function splitPreviewArgs(s){
+ const out=[];let depth=0,start=0;
+ for(let i=0;i<s.length;i++){if(s[i]==='('||s[i]==='[')depth++;else if(s[i]===')'||s[i]===']')depth--;else if(s[i]===','&&depth===0){out.push(s.slice(start,i).trim());start=i+1}}
+ out.push(s.slice(start).trim());return out;
+}
+function mathTex(s){
+ return s.replace(/\b(pi)\b/g,'\\pi')
+  .replace(/\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|log|ln|exp|abs)\b/g,'\\$1')
+  .replace(/\*/g,'\\cdot ')
+  .replace(/([A-Za-z])\^([A-Za-z0-9]+)/g,'$1^{$2}')
+  .replace(/\b(sqrt)\(([^()]*)\)/g,'\\sqrt{$2}');
+}
+function expressionTex(q){
+ const m=q.match(/^\s*(diff|integrate|limit|solve|simplify|factor|expand)\s*\((.*)\)\s*$/s);
+ if(!m)return mathTex(q);
+ const op=m[1],args=splitPreviewArgs(m[2]),f=mathTex(args[0]||''),v=mathTex(args[1]||'x');
+ if(op==='diff')return '\\frac{d}{d'+v+'}\\left('+f+'\\right)';
+ if(op==='integrate')return '\\int '+f+'\\,d'+v;
+ if(op==='limit')return '\\lim_{'+v+'\\to '+mathTex(args[2]||'0')+'}\\left('+f+'\\right)';
+ if(op==='solve')return args.map(mathTex).join(' ,\\quad ');
+ return '\\operatorname{'+op+'}\\left('+args.map(mathTex).join(',')+'\\right)';
+}
+function preview(){
+ const q=$('input').value.trim();
+ $('preview').textContent=q?'\\('+expressionTex(q)+'\\)':'';
+ if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{});
+}
 async function calculate(qOverride){
  const q=(qOverride!==undefined?qOverride:$('input').value).trim();
  if(!q){$('output').innerHTML='<section class="card error">Enter a mathematical expression first.</section>';return}
