@@ -9,9 +9,22 @@ try {
 }
 const LIMITS={expr:240,curves:6,plot2d:1600,surface:42,implicit:27,analysis:2400,vector:5};
 function fail(message){throw new Error(message);}
+const GRAPH_SYMBOLS=new Set(['x','y','z','t','u','v','theta','phi','pi','e']);
+const GRAPH_FUNCTIONS=new Set(['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','asinh','acosh','atanh','exp','log','log10','sqrt','abs','sign','floor','ceil','round','min','max','pow','nthRoot','factorial','gamma']);
+function validateGraphExpression(source){
+ let root;try{root=math.parse(source)}catch(e){fail('Invalid graph expression: '+e.message)}
+ let count=0;
+ root.traverse((node)=>{
+  if(++count>350)fail('Graph expression is too complex (maximum 350 syntax nodes).');
+  if(!['ConstantNode','SymbolNode','OperatorNode','FunctionNode','ParenthesisNode'].includes(node.type))fail('Unsupported graph syntax: '+node.type+'. Use arithmetic, constants and mathematical functions only.');
+  if(node.type==='SymbolNode'&&!GRAPH_SYMBOLS.has(node.name)&&!GRAPH_FUNCTIONS.has(node.name))fail('Unsupported graph symbol "'+node.name+'". Allowed variables: x, y, z, t, u, v, theta and phi.');
+  if(node.type==='FunctionNode'&&(!node.fn||node.fn.type!=='SymbolNode'||!GRAPH_FUNCTIONS.has(node.fn.name)))fail('Only approved mathematical functions can be called in graph expressions.');
+ });
+ return root.compile();
+}
 function compileLines(lines){
  if(!mathReady)fail('Graph mathematics library did not load. Check your connection and retry.');
- return lines.map(s=>{try{return math.compile(s.trim())}catch(e){fail('Invalid expression "'+s+'": '+e.message)}});
+ return lines.map(s=>{if(s.length>LIMITS.expr)fail('Each expression is limited to 240 characters.');return validateGraphExpression(s.trim())});
 }
 function val(c,scope){
  try{const v=c.evaluate(scope);return typeof v==='number'&&Number.isFinite(v)?v:NaN}catch(_){return NaN}
