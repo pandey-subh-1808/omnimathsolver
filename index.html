@@ -445,7 +445,7 @@ function graphCompile(raw,mode){
  const expr=mode==='3d'?q.replace(/^z\\s*=\\s*/i,''):q;
  return {label:raw.trim(),compiled:math.compile(expr),source:expr};
 }
-function graphFunctions(){return $('graphFunctions').value.split(/\\n|;/).map(v=>v.trim()).filter(Boolean)}
+function graphFunctions(){return $('graphFunctions').value.split(/\r?\n|;/).map(v=>v.trim()).filter(Boolean)}
 function graphEvaluate(fn,x,y){
  const scope={x,y,pi:Math.PI,e:Math.E};
  const value=fn.compiled.evaluate(scope);
@@ -494,7 +494,7 @@ function plotGraph(){
  if(!expressions.length){graphSetStatus('Enter an expression before plotting.','error');return;}
  const btn=$('plotGraph');btn.disabled=true;graphSetStatus('Calculating graph points in background…','busy');
  const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
- const worker=new Worker(new URL('./graph-worker.js?build=3dtypes2',document.baseURI));activeGraphWorker=worker;
+ const worker=new Worker(new URL('./graph-worker.js?build=3dtypes3',document.baseURI));activeGraphWorker=worker;
  const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
  worker.onerror=e=>{worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
  worker.onmessage=async e=>{
