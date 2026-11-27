@@ -71,7 +71,7 @@ function plot(m){
   traces.push({type:'surface',x:xs,y:ys,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='curve3d'){
   if(lines.length!==3)fail('Enter exactly three expressions: x(t), y(t), z(t), one per line.');
-  const [ta,tb]=range(m.tmin,m.tmax,'Parameter'),fs=compileLines(lines),ts=seq(ta,tb,900),xyz=fs.map(f=>ts.map(t=>val(f,baseScope({t}))));
+  const [ta,tb]=range(m.tmin,m.tmax,'Parameter'),fs=compileLines(lines.map(s=>s.replace(/^[xyz]\s*(?:\([^)]*\))?\s*=\s*/i,''))),ts=seq(ta,tb,900),xyz=fs.map(f=>ts.map(t=>val(f,baseScope({t}))));
   traces.push({type:'scatter3d',mode:'lines',name:'r(t)',x:xyz[0],y:xyz[1],z:xyz[2],connectgaps:false,line:{width:5}});
  }else if(mode==='paramSurface'){
   if(lines.length!==3)fail('Enter exactly three expressions: x(u,v), y(u,v), z(u,v), one per line.');
@@ -92,7 +92,7 @@ function plot(m){
   traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='spherical'){
   if(lines.length!==1)fail('Spherical mode accepts one expression r(theta,phi).');
-  const f=compileLines([lines[0].replace(/^r\s*=\s*/i,'')])[0],th=seq(0,2*Math.PI,52),ph=seq(0,Math.PI,34),xx=[],yy=[],zz=[];
+  const f=compileLines([lines[0].replace(/^r(?:\s*\([^)]*\))?\s*=\s*/i,'')])[0],th=seq(0,2*Math.PI,52),ph=seq(0,Math.PI,34),xx=[],yy=[],zz=[];
   for(const phi of ph){const xr=[],yr=[],zr=[];for(const theta of th){const r=val(f,baseScope({theta,phi}));xr.push(r*Math.sin(phi)*Math.cos(theta));yr.push(r*Math.sin(phi)*Math.sin(theta));zr.push(r*Math.cos(phi))}xx.push(xr);yy.push(yr);zz.push(zr)}
   traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='vector3d'){
