@@ -204,7 +204,7 @@ main.shell>.floating-nav{flex:none}
 <section id="calculatorSection" class="app-section active">
 <section class="card calculator-card">
 <div class="section-title">Enter a mathematical expression</div>
-<textarea id="input" spellcheck="false" placeholder="Examples:&#10;dsolve(diff(y(x),x) + y(x), y(x))&#10;integrate(sin(x), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>
+<textarea id="input" spellcheck="false" placeholder="Examples:&#10;z = x + y&#10;x = 2&#10;y = 3&#10;&#10;integrate(sin(x), x)&#10;dsolve(diff(y(x),x) + y(x), y(x))&#10;integrate(sin(x), x)&#10;diff(x^3*sin(x), x)&#10;solve(x^2 - 5*x + 6 = 0, x)"></textarea>\n<p class="hint">Tip: Enter one assignment per line (for example, z = x + y, x = 2, y = 3). OmniMath substitutes values automatically, even if assignments are not in dependency order.</p>
 <div class="section-title">Live expression preview</div><div id="preview" class="preview"></div>
 <div class="row solve-row" style="margin-top:14px"><button class="btn primary" id="calculate" type="button">Solve expression ↗</button></div>
 <div id="output" aria-live="polite"><section class="card"><div class="row" style="justify-content:space-between"><b>Solution &amp; working</b><span class="pill">Ready</span></div><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section></div>
