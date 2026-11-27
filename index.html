@@ -184,6 +184,16 @@ main.shell>.floating-nav{flex:none}
 .graph-result b{display:block;margin-bottom:5px;font-size:13px}
 .graph-result span{font-family:'JetBrains Mono',monospace;font-size:12px;overflow-wrap:anywhere}
 .graph-help{font-size:12px;color:var(--muted);line-height:1.55}
+
+.graph-range-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.graph-range-grid label{display:grid;gap:4px;color:var(--muted);font-size:11px;font-weight:700}
+.graph-range-grid input{width:100%;min-width:0;border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--soft);color:var(--ink);font:inherit}
+#graphStatus{min-height:20px}
+#graphStatus.busy{color:var(--blue);font-weight:700}
+#graphStatus.error{color:var(--red);font-weight:700}
+#plotGraph:disabled{opacity:.55;cursor:wait}
+@media(max-width:600px){.graph-range-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 @media(max-width:600px){.graph-controls{grid-template-columns:1fr}.graph-plot{height:340px;min-height:280px}}
 
 </style></head>
@@ -217,22 +227,39 @@ main.shell>.floating-nav{flex:none}
 
 <section id="graphSection" class="app-section" hidden>
  <section class="card">
-  <div class="section-heading"><div><span class="eyebrow">VISUAL MATHEMATICS</span><h2>Graphing &amp; curve analysis</h2><p class="hint">Plot functions, compare curves and inspect numerical features.</p></div><span class="section-icon">⌁</span></div>
+  <div class="section-heading"><div><span class="eyebrow">VISUAL MATHEMATICS</span><h2>Graphing &amp; curve analysis</h2><p class="hint">2D, 3D, parametric, implicit and vector-field visualisation.</p></div><span class="section-icon">⌁</span></div>
   <div class="graph-controls">
-   <label>Functions (one per line)<textarea id="graphFunctions" spellcheck="false">sin(x)
-x^2/4-2</textarea></label>
+   <label>Expression(s) — one per line<textarea id="graphFunctions" spellcheck="false">x^2-y^2</textarea></label>
    <div style="display:grid;gap:10px">
-    <label>Graph mode<select id="graphMode"><option value="2d">2D functions</option><option value="3d">3D surface z = f(x,y)</option></select></label>
-    <label>X minimum<input id="graphXMin" type="number" value="-10" step="any"></label>
-    <label>X maximum<input id="graphXMax" type="number" value="10" step="any"></label>
-    <label>Y minimum (optional)<input id="graphYMin" type="number" placeholder="Auto"></label>
-    <label>Y maximum (optional)<input id="graphYMax" type="number" placeholder="Auto"></label>
+    <label>Graph type<select id="graphMode">
+     <option value="2d">2D Cartesian functions (y = f(x))</option>
+     <option value="surface">3D explicit surface (z = f(x,y))</option>
+     <option value="curve3d">3D parametric curve (x(t), y(t), z(t))</option>
+     <option value="paramSurface">3D parametric surface (x(u,v), y(u,v), z(u,v))</option>
+     <option value="implicit">3D implicit surface (F(x,y,z) = 0)</option>
+     <option value="cylindrical">Cylindrical surface (r = f(theta,z))</option>
+     <option value="spherical">Spherical surface (r = f(theta,phi))</option>
+     <option value="vector3d">3D vector field (P, Q, R)</option>
+    </select></label>
+    <div class="graph-range-grid">
+     <label>X / u minimum<input id="graphXMin" type="number" value="-5" step="any"></label>
+     <label>X / u maximum<input id="graphXMax" type="number" value="5" step="any"></label>
+     <label>Y / v minimum<input id="graphYMin" type="number" value="-5" step="any"></label>
+     <label>Y / v maximum<input id="graphYMax" type="number" value="5" step="any"></label>
+     <label>Z minimum<input id="graphZMin" type="number" value="-5" step="any"></label>
+     <label>Z maximum<input id="graphZMax" type="number" value="5" step="any"></label>
+    </div>
+    <div class="graph-range-grid" id="graphTRange">
+     <label>t minimum<input id="graphTMin" type="number" value="0" step="any"></label>
+     <label>t maximum<input id="graphTMax" type="number" value="6.283185307" step="any"></label>
+    </div>
    </div>
   </div>
   <div class="graph-actions"><button class="btn primary" id="plotGraph">Plot graph ↗</button><button class="btn soft" id="analyseGraph">Run analysis</button><button class="btn soft" id="resetGraph">Reset view</button></div>
+  <p id="graphStatus" class="graph-help" role="status" aria-live="polite">Ready. Choose a graph type and enter its expression(s). Sampling runs in a background worker to keep the page responsive.</p>
   <div id="graphPlot" class="graph-plot" role="img" aria-label="Interactive mathematical graph"></div>
-  <p class="graph-help">Enter expressions such as <code>sin(x)</code>, <code>x^2-4</code>, <code>exp(-x^2)</code>, or <code>1/(x-2)</code>. Use <code>z=x^2+y^2</code> in 3D mode. Functions use radians. Plotly provides zoom, pan, hover coordinates and image export.</p>
-  <div class="section-title" style="margin-top:18px">Numerical graph analysis</div>
+  <p id="graphHelp" class="graph-help">2D: enter one or more functions such as <code>sin(x)</code> or <code>x^2-4</code>. Angles use radians. Use zoom, pan, hover and the camera menu to export the plot.</p>
+  <div class="section-title" style="margin-top:18px">Numerical 2D curve analysis</div>
   <div class="graph-controls">
    <label>Analysis method<select id="graphAnalysis"><option value="roots">Roots / x-intercepts</option><option value="intersections">Intersections (first two curves)</option><option value="extrema">Local maxima &amp; minima</option><option value="tangent">Tangent and normal at x =</option><option value="area">Signed area under first curve</option></select></label>
    <label id="graphParameterLabel">Parameter / x value<input id="graphParameter" type="number" value="0" step="any"></label>
@@ -240,7 +267,7 @@ x^2/4-2</textarea></label>
    <label>Upper bound (area)<input id="graphUpper" type="number" value="1" step="any"></label>
   </div>
   <div class="graph-actions"><button class="btn" id="runGraphAnalysis">Run graph analysis</button><button class="btn soft" id="sendGraphToCalc">Send first function to calculator</button></div>
-  <div id="graphResults" class="graph-results"><div class="graph-result"><b>Ready</b><span>Plot a function, then run an analysis.</span></div></div>
+  <div id="graphResults" class="graph-results"><div class="graph-result"><b>Ready</b><span>Plot a 2D function, then run an analysis.</span></div></div>
  </section>
 </section>
 
@@ -430,31 +457,56 @@ function graphRange(){
  if(!Number.isFinite(xmin)||!Number.isFinite(xmax)||xmin>=xmax)throw new Error('X minimum must be smaller than X maximum.');
  return {xmin,xmax};
 }
+let activeGraphWorker=null,graphPlotReady=false,graphPlotSequence=0;
+function graphSetStatus(message,state=''){
+ const el=$('graphStatus');el.textContent=message;el.className='graph-help '+state;
+}
+function graphLayout(title,is3d=false){
+ const dark=document.documentElement.dataset.theme==='dark';
+ const layout={title:{text:title,font:{size:14}},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:dark?'#e7edf8':'#17243b'},margin:{l:48,r:18,t:42,b:44},autosize:true};
+ if(is3d)layout.scene={xaxis:{title:'x',backgroundcolor:'rgba(0,0,0,0)',gridcolor:dark?'#344155':'#e2e8f0'},yaxis:{title:'y',backgroundcolor:'rgba(0,0,0,0)',gridcolor:dark?'#344155':'#e2e8f0'},zaxis:{title:'z',backgroundcolor:'rgba(0,0,0,0)',gridcolor:dark?'#344155':'#e2e8f0'},aspectmode:'data'};
+ else {layout.xaxis={title:'x',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'};layout.yaxis={title:'y',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'};layout.legend={orientation:'h',y:-0.2};}
+ return layout;
+}
+function graphModeChanged(){
+ const mode=$('graphMode').value,is2d=mode==='2d',isCurve=mode==='curve3d';
+ $('graphAnalysis').disabled=!is2d;$('runGraphAnalysis').disabled=!is2d;$('analyseGraph').disabled=!is2d;
+ $('graphTRange').style.display=isCurve?'grid':'none';
+ const hints={
+  '2d':'Enter one or more functions of x, one per line. Example: sin(x) and x^2-4.',
+  surface:'Enter z=f(x,y). Example: x^2-y^2 or sin(sqrt(x^2+y^2)).',
+  curve3d:'Enter exactly three expressions, one per line: x(t), y(t), z(t). Example: cos(t), sin(t), t/3.',
+  paramSurface:'Enter exactly three expressions, one per line: x(u,v), y(u,v), z(u,v). Example: cos(u)*sin(v), sin(u)*sin(v), cos(v).',
+  implicit:'Enter F(x,y,z)=0 as one expression. Example: x^2+y^2+z^2-9 (sphere of radius 3).',
+  cylindrical:'Enter r=f(theta,z). Example: 2+0.3*cos(3*theta). theta is in radians; z range is controlled by Z min/max.',
+  spherical:'Enter r=f(theta,phi). Example: 2+0.4*cos(3*theta)*sin(phi). theta and phi are in radians.',
+  vector3d:'Enter three vector components P, Q, R, one per line. Example: -y, x, z.'
+ };
+ $('graphHelp').textContent=hints[mode]+' Sampling is capped to keep plotting responsive.';
+}
 function plotGraph(){
- try{
-  const mode=$('graphMode').value,inputs=graphFunctions();
-  if(!inputs.length)throw new Error('Enter one or more functions, one per line.');
-  if(mode==='3d'){
-   const fn=graphCompile(inputs[0],mode),{xmin,xmax}=graphRange(),ymin=Number($('graphYMin').value||xmin),ymax=Number($('graphYMax').value||xmax);
-   const n=45,xx=[],yy=[],zz=[];
-   for(let i=0;i<n;i++)xx.push(xmin+(xmax-xmin)*i/(n-1));
-   for(let j=0;j<n;j++)yy.push(ymin+(ymax-ymin)*j/(n-1));
-   for(const y of yy)zz.push(xx.map(x=>graphEvaluate(fn,x,y)));
-   Plotly.react('graphPlot',[{type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false}],{...graphLayout('3D surface'),scene:{xaxis:{title:'x'},yaxis:{title:'y'},zaxis:{title:'z'}}},{responsive:true,displaylogo:false});
-   lastGraphFunctions=inputs;return;
-  }
-  const {xmin,xmax}=graphRange(),traces=[];
-  lastGraphFunctions=inputs;
-  inputs.forEach(raw=>{
-   const fn=graphCompile(raw,'2d'),xs=[],ys=[],N=1000;
-   for(let i=0;i<=N;i++){const x=xmin+(xmax-xmin)*i/N;xs.push(x);ys.push(graphEvaluate(fn,x));}
-   traces.push({x:xs,y:ys,type:'scatter',mode:'lines',name:raw,line:{width:2.5},connectgaps:false});
-  });
-  const layout=graphLayout('2D function plot');
-  const ymin=$('graphYMin').value,ymax=$('graphYMax').value;
-  if(ymin!==''&&ymax!==''){layout.yaxis.range=[Number(ymin),Number(ymax)];}
-  Plotly.react('graphPlot',traces,layout,{responsive:true,displaylogo:false,scrollZoom:true});
- }catch(e){graphShowResults('Graph error',e.message)}
+ if(activeGraphWorker){activeGraphWorker.terminate();activeGraphWorker=null;}
+ if(!window.Plotly){graphSetStatus('Plotly is still loading. Wait a moment and retry.','error');return;}
+ const mode=$('graphMode').value,expressions=graphFunctions(),seq=++graphPlotSequence;
+ if(!expressions.length){graphSetStatus('Enter an expression before plotting.','error');return;}
+ const btn=$('plotGraph');btn.disabled=true;graphSetStatus('Calculating graph points in background…','busy');
+ const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
+ const worker=new Worker(new URL('./graph-worker.js?build=3dtypes2',document.baseURI));activeGraphWorker=worker;
+ const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
+ worker.onerror=e=>{worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
+ worker.onmessage=async e=>{
+  if(seq!==graphPlotSequence){worker.terminate();return;}
+  const result=e.data;worker.terminate();activeGraphWorker=null;btn.disabled=false;
+  if(!result||result.error||result.ok===false){graphSetStatus(result?.error||'The graph could not be calculated.','error');return;}
+  try{
+   const is2d=mode==='2d',is3d=!is2d;
+   const title={ '2d':'2D function plot',surface:'3D explicit surface',curve3d:'3D parametric curve',paramSurface:'3D parametric surface',implicit:'3D implicit surface',cylindrical:'Cylindrical-coordinate surface',spherical:'Spherical-coordinate surface',vector3d:'3D vector field'}[mode];
+   await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d),{responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false});
+   graphPlotReady=true;lastGraphFunctions=expressions;
+   graphSetStatus('Plot ready. '+(is2d?'700 samples per curve.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
+  }catch(err){graphSetStatus('Plot rendering failed: '+err.message,'error');}
+ };
+ worker.postMessage(data);
 }
 function graphShowResults(title,body){
  $('graphResults').innerHTML='<div class="graph-result"><b>'+esc(title)+'</b><span>'+esc(body)+'</span></div>';
@@ -502,11 +554,10 @@ function graphAnalysis(){
 }
 function initGraphing(){
  $('plotGraph').onclick=plotGraph;$('analyseGraph').onclick=graphAnalysis;$('runGraphAnalysis').onclick=graphAnalysis;
- $('resetGraph').onclick=()=>{if(window.Plotly)Plotly.relayout('graphPlot',{ 'xaxis.autorange':true,'yaxis.autorange':true });};
+ $('resetGraph').onclick=()=>{if(window.Plotly&&graphPlotReady)Plotly.relayout('graphPlot',$('graphMode').value==='2d'?{'xaxis.autorange':true,'yaxis.autorange':true}:{'scene.camera':{eye:{x:1.5,y:1.5,z:1.2}}});};
  $('sendGraphToCalc').onclick=()=>{const first=graphFunctions()[0];if(!first)return;const expr=first.replace(/^y\\s*=\\s*/i,'');$('input').value='simplify('+expr+')';preview();document.querySelector('[data-section="calculatorSection"]').click()};
  $('graphAnalysis').onchange=()=>{$('graphParameterLabel').style.display=$('graphAnalysis').value==='tangent'?'grid':'none'};
- $('graphMode').onchange=()=>{const is3d=$('graphMode').value==='3d';$('graphAnalysis').disabled=is3d;$('runGraphAnalysis').disabled=is3d;};
- if(window.Plotly){Plotly.newPlot('graphPlot',[],graphLayout('Enter functions and select Plot graph'),{responsive:true,displaylogo:false})}
+ $('graphMode').onchange=graphModeChanged;graphModeChanged();
 }
 
 function init(){
