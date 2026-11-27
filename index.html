@@ -198,6 +198,7 @@ main.shell>.floating-nav{flex:none}
 
 @media(max-width:600px){.graph-controls{grid-template-columns:1fr}.graph-plot{height:340px;min-height:280px}}
 
+.preview-line{display:block;min-height:1.5em;margin:2px 0}
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
@@ -389,9 +390,14 @@ function expressionTex(q){
  return '\\operatorname{'+op+'}\\left('+args.map(mathTex).join(',')+'\\right)';
 }
 function preview(){
- const q=$('input').value.trim();
- $('preview').textContent=q?'\\('+expressionTex(q)+'\\)':'';
- if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{$('preview').title='Math typesetting failed; the expression is still available as text.'});else $('preview').title=q?'Math typesetting library unavailable; raw expression shown.':'';
+ const q=$('input').value.trim(),el=$('preview');
+ el.replaceChildren();
+ if(q){
+  q.split(/\r?\n/).filter(line=>line.trim()).forEach(line=>{
+   const row=document.createElement('div');row.className='preview-line';row.textContent='\\('+expressionTex(line)+'\\)';el.appendChild(row);
+  });
+ }
+ if(window.MathJax?.typesetPromise)MathJax.typesetPromise([el]).catch(()=>{el.title='Math typesetting failed; the expressions remain available as separate lines.'});else el.title=q?'Math typesetting library unavailable; expressions shown as separate lines.':'';
 }
 async function calculate(qOverride){
  const q=(qOverride!==undefined?qOverride:$('input').value).trim();
