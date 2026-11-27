@@ -478,6 +478,7 @@ function graphModeChanged(){
  $('graphTRange').style.display=isCurve?'grid':'none';
  const hints={
   '2d':'Enter one or more functions of x, one per line. Example: sin(x) and x^2-4.',
+  polar:'Enter r=f(theta), for example 2*cos(3*theta). theta is in radians.',
   surface:'Enter z=f(x,y). Example: x^2-y^2 or sin(sqrt(x^2+y^2)).',
   curve3d:'Enter exactly three expressions, one per line: x(t), y(t), z(t). Example: cos(t), sin(t), t/3.',
   paramSurface:'Enter exactly three expressions, one per line: x(u,v), y(u,v), z(u,v). Example: cos(u)*sin(v), sin(u)*sin(v), cos(v).',
@@ -504,13 +505,13 @@ function plotGraph(){
   clearTimeout(plotTimer);const result=e.data;worker.terminate();activeGraphWorker=null;btn.disabled=false;
   if(!result||result.error||result.ok===false){graphSetStatus(result?.error||'The graph could not be calculated.','error');return;}
   try{
-   const is2d=mode==='2d',is3d=!is2d;
-   const title={ '2d':'2D function plot',surface:'3D explicit surface',curve3d:'3D parametric curve',paramSurface:'3D parametric surface',implicit:'3D implicit surface',cylindrical:'Cylindrical-coordinate surface',spherical:'Spherical-coordinate surface',vector3d:'3D vector field'}[mode];
+   const is2d=mode==='2d'||mode==='polar',is3d=!is2d;
+   const title={ '2d':'2D function plot',polar:'2D polar curve plot',surface:'3D explicit surface',curve3d:'3D parametric curve',paramSurface:'3D parametric surface',implicit:'3D implicit surface',cylindrical:'Cylindrical-coordinate surface',spherical:'Spherical-coordinate surface',vector3d:'3D vector field'}[mode];
    const plotOptions={responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false};
    if(graphPlotReady) await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
    else await Plotly.newPlot('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
    graphPlotReady=true;lastGraphFunctions=expressions;
-   graphSetStatus('Plot ready. '+(is2d?'700 samples per curve.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
+   graphSetStatus('Plot ready. '+(is2d?'Curve samples are generated in the worker.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
   }catch(err){graphSetStatus('Plot rendering failed: '+err.message,'error');}
  };
  worker.postMessage(data);
@@ -541,7 +542,7 @@ function graphAnalysis(){
 }
 function initGraphing(){
  $('plotGraph').onclick=plotGraph;$('analyseGraph').onclick=graphAnalysis;$('runGraphAnalysis').onclick=graphAnalysis;
- $('resetGraph').onclick=()=>{if(window.Plotly&&graphPlotReady)Plotly.relayout('graphPlot',$('graphMode').value==='2d'?{'xaxis.autorange':true,'yaxis.autorange':true}:{'scene.camera':{eye:{x:1.5,y:1.5,z:1.2}}});};
+ $('resetGraph').onclick=()=>{if(window.Plotly&&graphPlotReady)Plotly.relayout('graphPlot',['2d','polar'].includes($('graphMode').value)?{'xaxis.autorange':true,'yaxis.autorange':true}:{'scene.camera':{eye:{x:1.5,y:1.5,z:1.2}}});};
  $('sendGraphToCalc').onclick=()=>{const first=graphFunctions()[0];if(!first)return;const expr=first.replace(/^y\\s*=\\s*/i,'');$('input').value='simplify('+expr+')';preview();document.querySelector('[data-section="calculatorSection"]').click()};
  $('graphAnalysis').onchange=()=>{$('graphParameterLabel').style.display=$('graphAnalysis').value==='tangent'?'grid':'none'};
  $('graphMode').onchange=graphModeChanged;graphModeChanged();
