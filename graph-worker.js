@@ -58,11 +58,11 @@ function plot(m){
  if(lines.some(s=>s.length>LIMITS.expr))fail('Each expression is limited to 240 characters.');
  const [xmin,xmax]=range(m.xmin,m.xmax,'X'),[ymin,ymax]=range(m.ymin,m.ymax,'Y'),[zmin,zmax]=range(m.zmin,m.zmax,'Z'),traces=[];
  if(mode==='2d'){
-  const implicit=/\by\b/.test(lines[0])||lines[0].includes('=');
+  const explicitAssignments=lines.map(s=>s.replace(/^[A-Za-z_]\w*\(\s*x\s*\)\s*=\s*/i,'')),implicit=/\by\b/.test(lines[0])||lines[0].includes('=')&&explicitAssignments[0]===lines[0];
   if(implicit){if(lines.length!==1)fail('Plot one implicit equation at a time.');const f=compileLines([normalizeEq(lines[0])])[0],xs=seq(xmin,xmax,150),ys=seq(ymin,ymax,150),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));traces.push({type:'contour',name:lines[0],x:xs,y:ys,z:zz,contours:{coloring:'lines',start:0,end:0,size:1},showscale:false,line:{width:2}})}
-  else{const fs=compileLines(lines);fs.forEach((f,i)=>{const pts=adaptiveCurve(f,xmin,xmax);traces.push({type:'scatter',mode:'lines',name:lines[i],x:pts.x,y:pts.y,connectgaps:false})})}
+  else{const fs=compileLines(explicitAssignments);fs.forEach((f,i)=>{const pts=adaptiveCurve(f,xmin,xmax);traces.push({type:'scatter',mode:'lines',name:lines[i],x:pts.x,y:pts.y,connectgaps:false})})}
  }else if(mode==='polar'){
-  const polarLines=lines.map(s=>s.replace(/^r(?:\s*\(\s*theta\s*\))?\s*=\s*/i,'')),fs=compileLines(polarLines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
+  const polarLines=lines.map(s=>s.replace(/^r(?:\s*\([^)]*\))?\s*=\s*/i,'')),fs=compileLines(polarLines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='polar'){
   const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const rr=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:rr.map((r,j)=>r*Math.cos(theta[j])),y:rr.map((r,j)=>r*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='surface'){
@@ -75,7 +75,7 @@ function plot(m){
   traces.push({type:'scatter3d',mode:'lines',name:'r(t)',x:xyz[0],y:xyz[1],z:xyz[2],connectgaps:false,line:{width:5}});
  }else if(mode==='paramSurface'){
   if(lines.length!==3)fail('Enter exactly three expressions: x(u,v), y(u,v), z(u,v), one per line.');
-  const fs=compileLines(lines),us=seq(xmin,xmax,38),vs=seq(ymin,ymax,38),xx=[],yy=[],zz=[];
+  const fs=compileLines(lines.map(s=>s.replace(/^[xyz]\s*(?:\([^)]*\))?\s*=\s*/i,''))),us=seq(xmin,xmax,38),vs=seq(ymin,ymax,38),xx=[],yy=[],zz=[];
   for(const v of vs){const xr=[],yr=[],zr=[];for(const u of us){const sc=baseScope({u,v});xr.push(val(fs[0],sc));yr.push(val(fs[1],sc));zr.push(val(fs[2],sc))}xx.push(xr);yy.push(yr);zz.push(zr)}
   traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='implicit'){
@@ -87,7 +87,7 @@ function plot(m){
   traces.push({type:'isosurface',x:xx,y:yy,z:zz,value:vv,isomin:-eps,isomax:eps,surface:{count:1},caps:{x:{show:false},y:{show:false},z:{show:false}},colorscale:'Viridis',showscale:false});
  }else if(mode==='cylindrical'){
   if(lines.length!==1)fail('Cylindrical mode accepts one expression r(theta,z).');
-  const f=compileLines([lines[0].replace(/^r\s*=\s*/i,'')])[0],th=seq(0,2*Math.PI,56),zs=seq(zmin,zmax,34),xx=[],yy=[],zz=[];
+  const f=compileLines([lines[0].replace(/^r(?:\s*\([^)]*\))?\s*=\s*/i,'')])[0],th=seq(0,2*Math.PI,56),zs=seq(zmin,zmax,34),xx=[],yy=[],zz=[];
   for(const z of zs){const xr=[],yr=[],zr=[];for(const theta of th){const r=val(f,baseScope({theta,z}));xr.push(r*Math.cos(theta));yr.push(r*Math.sin(theta));zr.push(z)}xx.push(xr);yy.push(yr);zz.push(zr)}
   traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='spherical'){
@@ -97,7 +97,7 @@ function plot(m){
   traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='vector3d'){
   if(lines.length!==3)fail('Enter exactly three vector components P, Q, R, one per line.');
-  const fs=compileLines(lines),xs=seq(xmin,xmax,LIMITS.vector),ys=seq(ymin,ymax,LIMITS.vector),zs=seq(zmin,zmax,LIMITS.vector),x=[],y=[],z=[],u=[],v=[],w=[];
+  const fs=compileLines(lines.map(s=>s.replace(/^[PQR]\s*(?:\([^)]*\))?\s*=\s*/i,''))),xs=seq(xmin,xmax,LIMITS.vector),ys=seq(ymin,ymax,LIMITS.vector),zs=seq(zmin,zmax,LIMITS.vector),x=[],y=[],z=[],u=[],v=[],w=[];
   for(const z0 of zs)for(const y0 of ys)for(const x0 of xs){const sc=baseScope({x:x0,y:y0,z:z0});x.push(x0);y.push(y0);z.push(z0);u.push(val(fs[0],sc));v.push(val(fs[1],sc));w.push(val(fs[2],sc))}
   traces.push({type:'cone',x,y,z,u,v,w,anchor:'tail',sizemode:'absolute',sizeref:Math.max(xmax-xmin,ymax-ymin,zmax-zmin)/9,colorscale:'Viridis',showscale:false});
  }else fail('Choose a supported graph type.');
