@@ -51,20 +51,34 @@ This is an educational project. Verify important results independently before us
 - This is a browser-based SymPy workbench, not a replacement for MATLAB's full symbolic/numeric toolboxes. No CAS can promise closed forms for every expression.
 
 
-## Expanded MATLAB-style mathematics commands
+## Expanded symbolic command coverage
 
-The browser engine is based on Pyodide + SymPy. It now exposes additional symbolic and numerical workflows (availability depends on SymPy's supported problem classes and assumptions):
+The browser solver exposes the following commands where SymPy can solve the supplied problem class:
 
 | Area | Commands and examples |
 |---|---|
 | Equation solving | `solve(x^2-2=0,x)`, `solveset(x^2-2,x,Reals)`, `nsolve(cos(x)-x,x,0.7)`, `roots(x^3-1,x)` |
-| Calculus | `diff(exp(x)*sin(x),x,4)`, `integrate(x^2,x)`, `integrate(sin(x),x,0,pi)`, `nint(exp(-x^2),x,0,1)` |
-| Series and sequences | `taylor(exp(x),x,0,8)`, `summation(k^2,(k,1,10))`, `product(k,(k,1,5))` |
+| Calculus | `diff(exp(x)*sin(x),x,4)`, `partial(x^2*y,x,y)`, `integrate(x^2,x)`, `integrate(sin(x),x,0,pi)`, `nint(exp(-x^2),x,0,1)` |
+| Series and sequences | `series(exp(x),x,0,8)`, `taylor(exp(x),x,0,8)`, `summation(k^2,(k,1,10))`, `product(k,(k,1,5))` |
 | Differential equations | `dsolve(diff(y(x),x,2)+y(x),y(x))`, `pdsolve(diff(u(x,y),x)+diff(u(x,y),y),u(x,y))`, `rsolve(a(n+1)-a(n)-1,a(n))` |
 | Transforms | `laplace(t^2,t,s)`, `ilaplace(2/s^3,s,t)`, `fourier(exp(-x^2),x,k)`, `ifourier(F,k,x)` |
-| Algebra | `apart(1/((x+1)*(x+2)),x)`, `cancel((x^2-1)/(x-1))`, `trigsimp(sin(x)^2+cos(x)^2)`, `subs(x^2,x,3)` |
-| Matrices | `det([[1,2],[3,4]])`, `inv([[1,2],[3,4]])`, `eigenvals([[2,1],[1,2]])`, `rref([[1,2],[2,4]])` |
-| Vector calculus | `grad(x^2*y,x,y)`, `divergence([x^2,y^2],x,y)`, `curl([-y,x,0],x,y,z)`, `laplacian(x^2+y^2,x,y)` |
-| Special functions | `gamma(x)`, `erf(x)`, `besselj(0,x)`, `zeta(2)`, `LambertW(x)` |
+| Algebra and special functions | `apart(1/((x+1)*(x+2)),x)`, `cancel((x^2-1)/(x-1))`, `trigsimp(sin(x)^2+cos(x)^2)`, `subs(x^2,x,3)`, `gamma(x)`, `erf(x)`, `besselj(0,x)`, `zeta(2)`, `LambertW(x)` |
+| Matrices | `det([[1,2],[3,4]])`, `inv([[1,2],[3,4]])`, `eigenvals([[2,1],[1,2]])`, `eigenvects([[2,1],[1,2]])`, `rref([[1,2],[2,4]])` |
+| Vector calculus | `grad(x^2*y,x,y)`, `divergence([x^2,y^2],x,y)`, `curl([-y,x,0],x,y,z)`, `laplacian(x^2+y^2,x,y)`, `jacobian([x*y,x+y],x,y)`, `hessian(x^2+y^2,x,y)`, `dot([1,2,3],[4,5,6])`, `cross([1,0,0],[0,1,0])` |
 
-The app is not a complete clone of MATLAB or every MATLAB toolbox. Numerical methods are approximations and must be checked for convergence, singularities, conditioning, and domain assumptions. Some symbolic integrals, PDEs, nonlinear systems, and ODEs may remain unevaluated or require additional initial/boundary conditions.
+## Graphing and numerical analysis
+
+- 2D Cartesian and implicit curves, polar curves, explicit 3D surfaces, 3D parametric curves and surfaces, implicit 3D surfaces, cylindrical and spherical surfaces, and 3D vector fields.
+- Expensive graph sampling and numerical curve analysis execute in dedicated Web Workers. 2D explicit curves use adaptive subdivision; 3D surfaces and implicit volumes use bounded fixed grids to control memory and rendering time.
+- Numerical 2D analysis includes roots, pairwise intersections, critical-point candidates, inflection candidates, tangent/normal estimates, signed area, and heuristic asymptote candidates.
+- Numerical results are approximations. Tangential roots/intersections, closely spaced features, singularities, discontinuities and highly oscillatory functions can still evade finite sampling. The app reports sampling/convergence caveats rather than claiming proof.
+
+## Safety, performance and known boundaries
+
+- Expressions are deliberately bounded by length, token count, nesting depth, exponent size, result size and symbolic-operation complexity. These limits protect the browser; they are not mathematical guarantees.
+- Matrix operations are limited to 8 × 8. ODE order is limited to 6; ordinary derivatives and mixed partials are limited to 12; series order is limited to 20.
+- Numerical integration is accepted only when two working precisions agree within a tolerance. This check is evidence of numerical stability, not a proof of accuracy; singular and oscillatory integrals need special treatment.
+- The previous-answer token `Ans` uses the last result in the current page session. Calculation history is stored locally in this browser and can be cleared from the History section.
+- The symbolic engine and graphing libraries are downloaded from public CDNs. First load and graphing require an internet connection; fully offline operation is not currently supported.
+- Initial/boundary-value ODE/PDE workflows, symbolic assumptions, units, certified root isolation, rigorous interval arithmetic, adaptive 3D meshing and guaranteed convergence are not implemented. Some PDEs, recurrences, nonlinear systems, transforms and integrals may remain unevaluated.
+- This educational workbench is not a complete MATLAB clone or a replacement for MATLAB's toolboxes. Independently verify important results before using them in assessed or safety-critical work.
