@@ -5,8 +5,12 @@ function send(type,payload={}){self.postMessage({type,...payload})}
 async function start(){
  try{
   send('status',{message:'Downloading Python engine in background…'});
-  importScripts('https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js');
-  py=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/'});
+  let pyodideBase=null;
+  for(const base of ['https://cdn.jsdelivr.net/pyodide/v0.27.7/full/','https://unpkg.com/pyodide@0.27.7/']){
+   try{importScripts(base+'pyodide.js');pyodideBase=base;break}catch(_){}
+  }
+  if(!pyodideBase)throw new Error('Could not load Pyodide from the available CDNs. Check your internet connection.');
+  py=await loadPyodide({indexURL:pyodideBase});
   send('status',{message:'Loading SymPy algebra package…'});
   await py.loadPackage('sympy');
   send('status',{message:'Preparing symbolic mathematics…'});
