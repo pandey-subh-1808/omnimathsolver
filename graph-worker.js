@@ -27,9 +27,20 @@ function run(m) {
   const [zmin,zmax]=range(m.zmin,m.zmax,'Z');
   const traces=[];
   if (mode==='2d') {
-    if(lines.length>4) throw new Error('For smooth performance, plot at most four 2D functions at once.');
-    const fs=compiled(lines), xs=seq(xmin,xmax,700);
-    fs.forEach((f,i)=>traces.push({type:'scatter',mode:'lines',name:lines[i],x:xs,y:xs.map(x=>value(f,{x,pi:Math.PI,e:Math.E})),connectgaps:false}));
+    const implicit = lines[0].includes('y') || lines[0].includes('=');
+    if (implicit) {
+      if(lines.length!==1) throw new Error('Plot one implicit equation at a time in 2D mode.');
+      const sides=lines[0].split('=');
+      if(sides.length>2) throw new Error('Use one equals sign for an implicit equation, such as x^2-y^2=0.');
+      const expression=sides.length===2?'('+sides[0]+')-('+sides[1]+')':lines[0];
+      const f=compiled([expression])[0],xs=seq(xmin,xmax,100),ys=seq(ymin,ymax,100);
+      const zz=ys.map(y=>xs.map(x=>value(f,{x,y,pi:Math.PI,e:Math.E})));
+      traces.push({type:'contour',name:lines[0],x:xs,y:ys,z:zz,contours:{coloring:'lines',start:0,end:0,size:1,showlabels:false},showscale:false,line:{width:3}});
+    } else {
+      if(lines.length>4) throw new Error('For smooth performance, plot at most four 2D functions at once.');
+      const fs=compiled(lines), xs=seq(xmin,xmax,700);
+      fs.forEach((f,i)=>traces.push({type:'scatter',mode:'lines',name:lines[i],x:xs,y:xs.map(x=>value(f,{x,pi:Math.PI,e:Math.E})),connectgaps:false}));
+    }
   } else if(mode==='surface') {
     const f=compiled([lines[0]])[0],xs=seq(xmin,xmax,38),ys=seq(ymin,ymax,38);
     const zz=ys.map(y=>xs.map(x=>value(f,{x,y,pi:Math.PI,e:Math.E})));
