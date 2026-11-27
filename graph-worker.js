@@ -103,6 +103,12 @@ function plot(m){
  return {traces,mode};
 }
 function bisect(f,a,b,fa,fb){for(let i=0;i<65;i++){const mid=(a+b)/2,fm=f(mid);if(!Number.isFinite(fm))return null;if(Math.abs(fm)<1e-11||Math.abs(b-a)<1e-11*Math.max(1,Math.abs(mid)))return mid;if(fa*fm<=0){b=mid;fb=fm}else{a=mid;fa=fm}}return(a+b)/2}
+function residualLooksLikeRoot(f,x,step){
+ const center=f(x),left=f(x-step),right=f(x+step);
+ if(!Number.isFinite(center))return false;
+ const neighbor=Math.min(Math.abs(left),Math.abs(right));
+ return Math.abs(center)<1e-7||(Number.isFinite(neighbor)&&Math.abs(center)<=1e-4*Math.max(1e-12,neighbor));
+}
 function goldenMin(g,a,b){const r=(Math.sqrt(5)-1)/2;let c=b-r*(b-a),d=a+r*(b-a),fc=g(c),fd=g(d);for(let i=0;i<55;i++){if(!Number.isFinite(fc)||!Number.isFinite(fd))return null;if(fc<fd){b=d;d=c;fd=fc;c=b-r*(b-a);fc=g(c)}else{a=c;c=d;fc=fd;d=a+r*(b-a);fd=g(d)}}return(a+b)/2}
 function analyze(m){
  const rawLines=(m.expressions||[]).map(String).map(s=>s.trim()).filter(Boolean),kind=m.analysis;
@@ -113,7 +119,7 @@ function analyze(m){
  const fns=fs.map(f=>x=>val(f,baseScope({x})));
  const derivative=(f,x,h)=>{const p=f(x+h),q=f(x-h);return Number.isFinite(p)&&Number.isFinite(q)?(p-q)/(2*h):NaN};
  if(kind==='roots'){
-  fns.forEach((f,j)=>{let x0=a,y0=f(x0);for(let i=1;i<=N;i++){const x=a+i*dx,y=f(x);if(Number.isFinite(y0)&&Number.isFinite(y)){if(y0===0)out.push('f'+(j+1)+' root ≈ '+fmt(x0));else if(y0*y<0){const r=bisect(f,x0,x,y0,y);if(r!==null)out.push('f'+(j+1)+' root ≈ '+fmt(r))}}x0=x;y0=y}
+  fns.forEach((f,j)=>{let x0=a,y0=f(x0);for(let i=1;i<=N;i++){const x=a+i*dx,y=f(x);if(Number.isFinite(y0)&&Number.isFinite(y)){if(y0===0)out.push('f'+(j+1)+' root ≈ '+fmt(x0));else if(y0*y<0){const r=bisect(f,x0,x,y0,y);if(r!==null&&residualLooksLikeRoot(f,r,Math.max(dx*0.1,1e-7)))out.push('f'+(j+1)+' root ≈ '+fmt(r))}}x0=x;y0=y}
    // Search local minima of |f| to catch even-multiplicity/tangential roots.
    const abs=x=>Math.abs(f(x));for(let i=1;i<N;i++){const x=a+i*dx,l=abs(x-dx),c=abs(x),r=abs(x+dx);if([l,c,r].every(Number.isFinite)&&c<=l&&c<=r&&c<Math.max(1,Math.abs(l),Math.abs(r))*0.015){const root=goldenMin(abs,x-dx,x+dx);if(root!==null&&Math.abs(f(root))<1e-7*Math.max(1,Math.abs(l),Math.abs(r)))out.push('f'+(j+1)+' tangential root ≈ '+fmt(root))}}
   });
@@ -123,7 +129,7 @@ function analyze(m){
   if(fns.length<2)fail('Enter at least two explicit functions, one per line.');
   for(let j=0;j<fns.length;j++)for(let k=j+1;k<fns.length;k++){
    const d=x=>fns[j](x)-fns[k](x),ad=x=>Math.abs(d(x));let x0=a,y0=d(x0);
-   for(let i=1;i<=N;i++){const x=a+i*dx,y=d(x);if(Number.isFinite(y0)&&Number.isFinite(y)&&y0*y<0){const r=bisect(d,x0,x,y0,y);if(r!==null)out.push('f'+(j+1)+' ∩ f'+(k+1)+': ('+fmt(r)+', '+fmt(fns[j](r))+')')}x0=x;y0=y}
+   for(let i=1;i<=N;i++){const x=a+i*dx,y=d(x);if(Number.isFinite(y0)&&Number.isFinite(y)&&y0*y<0){const r=bisect(d,x0,x,y0,y);if(r!==null&&residualLooksLikeRoot(d,r,Math.max(dx*0.1,1e-7))&&Number.isFinite(fns[j](r))&&Number.isFinite(fns[k](r)))out.push('f'+(j+1)+' ∩ f'+(k+1)+': ('+fmt(r)+', '+fmt(fns[j](r))+')')}x0=x;y0=y}
    for(let i=1;i<N;i++){const x=a+i*dx,l=ad(x-dx),v=ad(x),r0=ad(x+dx),scale=Math.max(1,l||0,r0||0);if([l,v,r0].every(Number.isFinite)&&v<=l&&v<=r0&&v<0.015*scale){const root=goldenMin(ad,x-dx,x+dx);if(root!==null&&ad(root)<1e-7*scale)out.push('f'+(j+1)+' tangent intersection f'+(k+1)+': ('+fmt(root)+', '+fmt(fns[j](root))+')')}}
   }
   return {title:'Curve intersections',body:out.length?[...new Set(out)].slice(0,100).join(' · '):'No intersections detected at the selected resolution. This is numerical evidence, not proof.'};
