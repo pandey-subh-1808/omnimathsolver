@@ -233,7 +233,7 @@ main.shell>.floating-nav{flex:none}
 x^2-4</textarea></label>
    <div style="display:grid;gap:10px">
     <label>Graph type<select id="graphMode">
-     <option value="2d">2D Cartesian functions (y = f(x))</option>
+     <option value="2d">2D Cartesian & implicit curves</option>
      <option value="surface">3D explicit surface (z = f(x,y))</option>
      <option value="curve3d">3D parametric curve (x(t), y(t), z(t))</option>
      <option value="paramSurface">3D parametric surface (x(u,v), y(u,v), z(u,v))</option>
@@ -259,7 +259,7 @@ x^2-4</textarea></label>
   <div class="graph-actions"><button class="btn primary" id="plotGraph">Plot graph ↗</button><button class="btn soft" id="analyseGraph">Run analysis</button><button class="btn soft" id="resetGraph">Reset view</button></div>
   <p id="graphStatus" class="graph-help" role="status" aria-live="polite">Ready. Choose a graph type and enter its expression(s). Sampling runs in a background worker to keep the page responsive.</p>
   <div id="graphPlot" class="graph-plot" role="img" aria-label="Interactive mathematical graph"></div>
-  <p id="graphHelp" class="graph-help">2D: enter one or more functions such as <code>sin(x)</code> or <code>x^2-4</code>. Angles use radians. Use zoom, pan, hover and the camera menu to export the plot.</p>
+  <p id="graphHelp" class="graph-help">2D: enter functions of x such as <code>sin(x)</code>, or implicit equations such as <code>x^2-y^2=0</code>. Angles use radians. Use zoom, pan, hover and the camera menu to export the plot.</p>
   <div class="section-title" style="margin-top:18px">Numerical 2D curve analysis</div>
   <div class="graph-controls">
    <label>Analysis method<select id="graphAnalysis"><option value="roots">Roots / x-intercepts</option><option value="intersections">Intersections (first two curves)</option><option value="extrema">Local maxima &amp; minima</option><option value="tangent">Tangent and normal at x =</option><option value="area">Signed area under first curve</option></select></label>
