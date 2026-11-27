@@ -293,6 +293,8 @@ x^2-4</textarea></label>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);let solverWorker=null,engineReady=false,lastAnswer='',history=(()=>{try{return JSON.parse(localStorage.getItem('omnimath-history')||'[]').filter(v=>v&&typeof v.q==='string'&&typeof v.answer==='string').slice(0,15)}catch(_){return []}})(),calculationInProgress=false,calculationTimer=null;
+let startupTimer=null;
+lastAnswer=history[0]?.answer||'';
 const samples=[
 ['Definite integral','integrate(sin(x), x, 0, pi)'],
 ['Advanced integral','integrate(exp(x)*(1+sin(x))/(1+cos(x)), x)'],
@@ -340,7 +342,7 @@ function boot(){
  engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
   solverWorker=new Worker(new URL('./solver-worker.js?build=math-final-v6',document.baseURI));
-  let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup timed out — reload and check the network';if(solverWorker){solverWorker.terminate();solverWorker=null}}},60000);
+  startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup timed out — reload and check the network';if(solverWorker){solverWorker.terminate();solverWorker=null}}},60000);
   solverWorker.onmessage=event=>{
    const data=event.data||{};
    if(data.type==='status'){status.textContent=data.message;return}
