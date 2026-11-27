@@ -1,85 +1,118 @@
-/* OmniMath graph sampler: all expensive expression sampling runs off the UI thread. */
+/* OmniMath graph and analysis worker. All sampling and curve analysis run off the UI thread. */
+'use strict';
+let mathReady=false;
 try {
   importScripts('https://cdn.jsdelivr.net/npm/mathjs@14.0.1/lib/browser/math.js');
-} catch (e) {
-  self.postMessage({error:'Could not load the graph mathematics library. Check your connection and retry.'});
+  mathReady=!!(self.math&&math.compile);
+} catch(e) {
+  self.postMessage({ok:false,error:'Could not load the graph mathematics library. Check your connection and retry.'});
 }
-function compiled(lines) {
-  if (!self.math || !math.compile) throw new Error('Graph mathematics library did not load.');
-  return lines.map(s => math.compile(s.trim()));
+const LIMITS={expr:240,curves:6,plot2d:1600,surface:42,implicit:27,analysis:2400,vector:5};
+function fail(message){throw new Error(message);}
+function compileLines(lines){
+ if(!mathReady)fail('Graph mathematics library did not load. Check your connection and retry.');
+ return lines.map(s=>{try{return math.compile(s.trim())}catch(e){fail('Invalid expression "'+s+'": '+e.message)}});
 }
-function value(c, scope) {
-  const v = c.evaluate(scope);
-  return typeof v === 'number' && Number.isFinite(v) ? v : NaN;
+function val(c,scope){
+ try{const v=c.evaluate(scope);return typeof v==='number'&&Number.isFinite(v)?v:NaN}catch(_){return NaN}
 }
-function range(a,b,name) {
-  a=Number(a); b=Number(b);
-  if (!Number.isFinite(a)||!Number.isFinite(b)||a>=b) throw new Error(name+' minimum must be smaller than maximum.');
-  return [a,b];
+function seq(a,b,n){return Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1))}
+function range(a,b,name){a=Number(a);b=Number(b);if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b||Math.abs(a)>1e6||Math.abs(b)>1e6)fail(name+' range must be finite, increasing and within ±1,000,000.');return[a,b]}
+function normalizeEq(q){const parts=q.split('=');if(parts.length>2)fail('Use at most one equals sign.');return parts.length===2?'('+parts[0]+')-('+parts[1]+')':q}
+function baseScope(extra={}){return {pi:Math.PI,e:Math.E,...extra}}
+function plot(m){
+ const mode=m.mode,lines=(m.expressions||[]).map(v=>String(v).trim()).filter(Boolean);
+ if(!lines.length)fail('Enter an expression before plotting.');
+ if(lines.length>LIMITS.curves)fail('At most six expressions are allowed.');
+ if(lines.some(s=>s.length>LIMITS.expr))fail('Each expression is limited to 240 characters.');
+ const [xmin,xmax]=range(m.xmin,m.xmax,'X'),[ymin,ymax]=range(m.ymin,m.ymax,'Y'),[zmin,zmax]=range(m.zmin,m.zmax,'Z'),traces=[];
+ if(mode==='2d'){
+  const implicit=lines[0].includes('y')||lines[0].includes('=');
+  if(implicit){if(lines.length!==1)fail('Plot one implicit equation at a time.');const f=compileLines([normalizeEq(lines[0])])[0],xs=seq(xmin,xmax,150),ys=seq(ymin,ymax,150),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));traces.push({type:'contour',name:lines[0],x:xs,y:ys,z:zz,contours:{coloring:'lines',start:0,end:0,size:1},showscale:false,line:{width:2}})}
+  else{const fs=compileLines(lines),xs=seq(xmin,xmax,LIMITS.plot2d);fs.forEach((f,i)=>traces.push({type:'scatter',mode:'lines',name:lines[i],x:xs,y:xs.map(x=>val(f,baseScope({x}))),connectgaps:false}))}
+ }else if(mode==='polar'){
+  const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
+ }else if(mode==='surface'){
+  if(lines.length!==1)fail('3D explicit surface mode accepts exactly one z=f(x,y) expression.');
+  const f=compileLines([lines[0].replace(/^z\\s*=\\s*/i,'')])[0],xs=seq(xmin,xmax,LIMITS.surface),ys=seq(ymin,ymax,LIMITS.surface),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));
+  traces.push({type:'surface',x:xs,y:ys,z:zz,colorscale:'Viridis',connectgaps:false});
+ }else if(mode==='curve3d'){
+  if(lines.length!==3)fail('Enter exactly three expressions: x(t), y(t), z(t), one per line.');
+  const [ta,tb]=range(m.tmin,m.tmax,'Parameter'),fs=compileLines(lines),ts=seq(ta,tb,900),xyz=fs.map(f=>ts.map(t=>val(f,baseScope({t}))));
+  traces.push({type:'scatter3d',mode:'lines',name:'r(t)',x:xyz[0],y:xyz[1],z:xyz[2],connectgaps:false,line:{width:5}});
+ }else if(mode==='paramSurface'){
+  if(lines.length!==3)fail('Enter exactly three expressions: x(u,v), y(u,v), z(u,v), one per line.');
+  const fs=compileLines(lines),us=seq(xmin,xmax,38),vs=seq(ymin,ymax,38),xx=[],yy=[],zz=[];
+  for(const v of vs){const xr=[],yr=[],zr=[];for(const u of us){const sc=baseScope({u,v});xr.push(val(fs[0],sc));yr.push(val(fs[1],sc));zr.push(val(fs[2],sc))}xx.push(xr);yy.push(yr);zz.push(zr)}
+  traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
+ }else if(mode==='implicit'){
+  if(lines.length!==1)fail('3D implicit surface mode accepts exactly one expression F(x,y,z)=0. Enter the left side minus right side, e.g. x^2+y^2+z^2-9.');
+  const f=compileLines([normalizeEq(lines[0])])[0],xs=seq(xmin,xmax,LIMITS.implicit),ys=seq(ymin,ymax,LIMITS.implicit),zs=seq(zmin,zmax,LIMITS.implicit),xx=[],yy=[],zz=[],vv=[];
+  for(const z of zs)for(const y of ys)for(const x of xs){xx.push(x);yy.push(y);zz.push(z);vv.push(val(f,baseScope({x,y,z})))}
+  const finite=vv.filter(Number.isFinite);if(!finite.length)fail('The implicit expression is undefined throughout the selected volume.');
+  const scale=Math.max(...finite.map(Math.abs)),eps=Math.max(scale*0.008,1e-8);
+  traces.push({type:'isosurface',x:xx,y:yy,z:zz,value:vv,isomin:-eps,isomax:eps,surface:{count:1},caps:{x:{show:false},y:{show:false},z:{show:false}},colorscale:'Viridis',showscale:false});
+ }else if(mode==='cylindrical'){
+  if(lines.length!==1)fail('Cylindrical mode accepts one expression r(theta,z).');
+  const f=compileLines([lines[0]])[0],th=seq(0,2*Math.PI,56),zs=seq(zmin,zmax,34),xx=[],yy=[],zz=[];
+  for(const z of zs){const xr=[],yr=[],zr=[];for(const theta of th){const r=val(f,baseScope({theta,z}));xr.push(r*Math.cos(theta));yr.push(r*Math.sin(theta));zr.push(z)}xx.push(xr);yy.push(yr);zz.push(zr)}
+  traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
+ }else if(mode==='spherical'){
+  if(lines.length!==1)fail('Spherical mode accepts one expression r(theta,phi).');
+  const f=compileLines([lines[0]])[0],th=seq(0,2*Math.PI,52),ph=seq(0,Math.PI,34),xx=[],yy=[],zz=[];
+  for(const phi of ph){const xr=[],yr=[],zr=[];for(const theta of th){const r=val(f,baseScope({theta,phi}));xr.push(r*Math.sin(phi)*Math.cos(theta));yr.push(r*Math.sin(phi)*Math.sin(theta));zr.push(r*Math.cos(phi))}xx.push(xr);yy.push(yr);zz.push(zr)}
+  traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
+ }else if(mode==='vector3d'){
+  if(lines.length!==3)fail('Enter exactly three vector components P, Q, R, one per line.');
+  const fs=compileLines(lines),xs=seq(xmin,xmax,LIMITS.vector),ys=seq(ymin,ymax,LIMITS.vector),zs=seq(zmin,zmax,LIMITS.vector),x=[],y=[],z=[],u=[],v=[],w=[];
+  for(const z0 of zs)for(const y0 of ys)for(const x0 of xs){const sc=baseScope({x:x0,y:y0,z:z0});x.push(x0);y.push(y0);z.push(z0);u.push(val(fs[0],sc));v.push(val(fs[1],sc));w.push(val(fs[2],sc))}
+  traces.push({type:'cone',x,y,z,u,v,w,anchor:'tail',sizemode:'absolute',sizeref:Math.max(xmax-xmin,ymax-ymin,zmax-zmin)/9,colorscale:'Viridis',showscale:false});
+ }else fail('Choose a supported graph type.');
+ return {traces,mode};
 }
-function seq(a,b,n) { return Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1)); }
-function run(m) {
-  const mode=m.mode, lines=(m.expressions||[]).map(x=>String(x).trim()).filter(Boolean);
-  if (!lines.length) throw new Error('Enter an expression before plotting.');
-  if (lines.some(x=>x.length>240)) throw new Error('Each expression is limited to 240 characters for responsive plotting.');
-  const [xmin,xmax]=range(m.xmin,m.xmax,'X');
-  const [ymin,ymax]=range(m.ymin,m.ymax,'Y');
-  const [zmin,zmax]=range(m.zmin,m.zmax,'Z');
-  const traces=[];
-  if (mode==='2d') {
-    const implicit = lines[0].includes('y') || lines[0].includes('=');
-    if (implicit) {
-      if(lines.length!==1) throw new Error('Plot one implicit equation at a time in 2D mode.');
-      const sides=lines[0].split('=');
-      if(sides.length>2) throw new Error('Use one equals sign for an implicit equation, such as x^2-y^2=0.');
-      const expression=sides.length===2?'('+sides[0]+')-('+sides[1]+')':lines[0];
-      const f=compiled([expression])[0],xs=seq(xmin,xmax,100),ys=seq(ymin,ymax,100);
-      const zz=ys.map(y=>xs.map(x=>value(f,{x,y,pi:Math.PI,e:Math.E})));
-      traces.push({type:'contour',name:lines[0],x:xs,y:ys,z:zz,contours:{coloring:'lines',start:0,end:0,size:1,showlabels:false},showscale:false,line:{width:3}});
-    } else {
-      if(lines.length>4) throw new Error('For smooth performance, plot at most four 2D functions at once.');
-      const fs=compiled(lines), xs=seq(xmin,xmax,700);
-      fs.forEach((f,i)=>traces.push({type:'scatter',mode:'lines',name:lines[i],x:xs,y:xs.map(x=>value(f,{x,pi:Math.PI,e:Math.E})),connectgaps:false}));
-    }
-  } else if(mode==='surface') {
-    const f=compiled([lines[0]])[0],xs=seq(xmin,xmax,38),ys=seq(ymin,ymax,38);
-    const zz=ys.map(y=>xs.map(x=>value(f,{x,y,pi:Math.PI,e:Math.E})));
-    traces.push({type:'surface',x:xs,y:ys,z:zz,colorscale:'Viridis',connectgaps:false});
-  } else if(mode==='curve3d') {
-    if(lines.length!==3) throw new Error('Enter exactly three expressions: x(t), y(t), z(t), one per line.');
-    const fs=compiled(lines),ts=seq(Number(m.tmin),Number(m.tmax),650);
-    if(!Number.isFinite(Number(m.tmin))||!Number.isFinite(Number(m.tmax))||Number(m.tmin)>=Number(m.tmax)) throw new Error('Parameter minimum must be smaller than maximum.');
-    const xyz=fs.map(f=>ts.map(t=>value(f,{t,pi:Math.PI,e:Math.E})));
-    traces.push({type:'scatter3d',mode:'lines',name:'r(t)',x:xyz[0],y:xyz[1],z:xyz[2],line:{width:5}});
-  } else if(mode==='paramSurface') {
-    if(lines.length!==3) throw new Error('Enter exactly three expressions: x(u,v), y(u,v), z(u,v), one per line.');
-    const fs=compiled(lines),us=seq(xmin,xmax,28),vs=seq(ymin,ymax,28);
-    const xx=[],yy=[],zz=[];
-    for(const v of vs){const xr=[],yr=[],zr=[];for(const u of us){const sc={u,v,pi:Math.PI,e:Math.E};xr.push(value(fs[0],sc));yr.push(value(fs[1],sc));zr.push(value(fs[2],sc));}xx.push(xr);yy.push(yr);zz.push(zr);}
-    traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
-  } else if(mode==='implicit') {
-    const f=compiled([lines[0]])[0],xs=seq(xmin,xmax,23),ys=seq(ymin,ymax,23),zs=seq(zmin,zmax,23);
-    const x=[],y=[],z=[],v=[];
-    for(const zz of zs)for(const yy of ys)for(const xx of xs){x.push(xx);y.push(yy);z.push(zz);v.push(value(f,{x:xx,y:yy,z:zz,pi:Math.PI,e:Math.E}));}
-    const finite=v.filter(Number.isFinite),scale=finite.length?Math.max(...finite.map(Math.abs)):1,eps=Math.max(scale*0.012,1e-6);
-    traces.push({type:'isosurface',x,y,z,value:v,isomin:-eps,isomax:eps,surface:{count:1},caps:{x:{show:false},y:{show:false},z:{show:false}},colorscale:'Viridis',showscale:false});
-  } else if(mode==='cylindrical') {
-    const f=compiled([lines[0]])[0],theta=seq(0,2*Math.PI,48),zs=seq(zmin,zmax,30),xx=[],yy=[],zz=[];
-    for(const z0 of zs){const xr=[],yr=[],zr=[];for(const th of theta){const r=value(f,{theta:th,z:z0,pi:Math.PI,e:Math.E});xr.push(r*Math.cos(th));yr.push(r*Math.sin(th));zr.push(z0);}xx.push(xr);yy.push(yr);zz.push(zr);}
-    traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
-  } else if(mode==='spherical') {
-    const f=compiled([lines[0]])[0],theta=seq(0,2*Math.PI,42),phi=seq(0,Math.PI,28),xx=[],yy=[],zz=[];
-    for(const ph of phi){const xr=[],yr=[],zr=[];for(const th of theta){const r=value(f,{theta:th,phi:ph,pi:Math.PI,e:Math.E});xr.push(r*Math.sin(ph)*Math.cos(th));yr.push(r*Math.sin(ph)*Math.sin(th));zr.push(r*Math.cos(ph));}xx.push(xr);yy.push(yr);zz.push(zr);}
-    traces.push({type:'surface',x:xx,y:yy,z:zz,colorscale:'Viridis',connectgaps:false});
-  } else if(mode==='vector3d') {
-    if(lines.length!==3) throw new Error('Enter exactly three components: P(x,y,z), Q(x,y,z), R(x,y,z), one per line.');
-    const fs=compiled(lines),xs=seq(xmin,xmax,5),ys=seq(ymin,ymax,5),zs=seq(zmin,zmax,5),x=[],y=[],z=[],u=[],v=[],w=[];
-    for(const zz of zs)for(const yy of ys)for(const xx of xs){const sc={x:xx,y:yy,z:zz,pi:Math.PI,e:Math.E};x.push(xx);y.push(yy);z.push(zz);u.push(value(fs[0],sc));v.push(value(fs[1],sc));w.push(value(fs[2],sc));}
-    traces.push({type:'cone',x,y,z,u,v,w,anchor:'tail',sizemode:'absolute',sizeref:Math.max(xmax-xmin,ymax-ymin,zmax-zmin)/9,colorscale:'Viridis',showscale:false});
-  } else throw new Error('Choose a supported graph type.');
-  return {traces,mode};
+function bisect(f,a,b,fa,fb){for(let i=0;i<65;i++){const mid=(a+b)/2,fm=f(mid);if(!Number.isFinite(fm))return null;if(Math.abs(fm)<1e-11||Math.abs(b-a)<1e-11*Math.max(1,Math.abs(mid)))return mid;if(fa*fm<=0){b=mid;fb=fm}else{a=mid;fa=fm}}return(a+b)/2}
+function goldenMin(g,a,b){const r=(Math.sqrt(5)-1)/2;let c=b-r*(b-a),d=a+r*(b-a),fc=g(c),fd=g(d);for(let i=0;i<55;i++){if(!Number.isFinite(fc)||!Number.isFinite(fd))return null;if(fc<fd){b=d;d=c;fd=fc;c=b-r*(b-a);fc=g(c)}else{a=c;c=d;fc=fd;d=a+r*(b-a);fd=g(d)}}return(a+b)/2}
+function analyze(m){
+ const lines=(m.expressions||[]).map(String).map(s=>s.trim()).filter(Boolean),kind=m.analysis;
+ if(!lines.length)fail('Enter at least one function.');
+ if(lines.some(s=>s.includes('y')||s.includes('=')))fail('Curve analysis currently requires explicit functions of x, not implicit equations.');
+ const [a,b]=range(m.xmin,m.xmax,'X'),fs=compileLines(lines),N=LIMITS.analysis,dx=(b-a)/N,fmt=v=>Number(v).toPrecision(9),out=[];
+ const fns=fs.map(f=>x=>val(f,baseScope({x})));
+ const derivative=(f,x,h)=>{const p=f(x+h),q=f(x-h);return Number.isFinite(p)&&Number.isFinite(q)?(p-q)/(2*h):NaN};
+ if(kind==='roots'){
+  fns.forEach((f,j)=>{let x0=a,y0=f(x0);for(let i=1;i<=N;i++){const x=a+i*dx,y=f(x);if(Number.isFinite(y0)&&Number.isFinite(y)){if(y0===0)out.push('f'+(j+1)+' root ≈ '+fmt(x0));else if(y0*y<0){const r=bisect(f,x0,x,y0,y);if(r!==null)out.push('f'+(j+1)+' root ≈ '+fmt(r))}}x0=x;y0=y}
+   // Search local minima of |f| to catch even-multiplicity/tangential roots.
+   const abs=x=>Math.abs(f(x));for(let i=1;i<N;i++){const x=a+i*dx,l=abs(x-dx),c=abs(x),r=abs(x+dx);if([l,c,r].every(Number.isFinite)&&c<=l&&c<=r&&c<Math.max(1,Math.abs(l),Math.abs(r))*0.015){const root=goldenMin(abs,x-dx,x+dx);if(root!==null&&Math.abs(f(root))<1e-7*Math.max(1,Math.abs(l),Math.abs(r)))out.push('f'+(j+1)+' tangential root ≈ '+fmt(root))}}
+  });
+  return {title:'Numerical roots',body:out.length?[...new Set(out)].slice(0,80).join(' · '):'No roots detected at the selected resolution. This is numerical evidence, not proof of no roots.'};
+ }
+ if(kind==='intersections'){
+  if(fns.length<2)fail('Enter at least two explicit functions, one per line.');
+  for(let j=0;j<fns.length;j++)for(let k=j+1;k<fns.length;k++){const d=x=>fns[j](x)-fns[k](x);let x0=a,y0=d(x0);for(let i=1;i<=N;i++){const x=a+i*dx,y=d(x);if(Number.isFinite(y0)&&Number.isFinite(y)&&y0*y<0){const r=bisect(d,x0,x,y0,y);if(r!==null)out.push('f'+(j+1)+' ∩ f'+(k+1)+': ('+fmt(r)+', '+fmt(fns[j](r))+')')}x0=x;y0=y}}
+  return {title:'Curve intersections',body:out.length?out.slice(0,100).join(' · '):'No crossing intersections detected. Tangential intersections may require closer sampling.'};
+ }
+ if(kind==='extrema'||kind==='inflections'){
+  fns.forEach((f,j)=>{const d1=x=>derivative(f,x,Math.max(1e-5,Math.abs(x)*1e-5,dx*0.05)),d2=x=>derivative(d1,x,Math.max(1e-4,Math.abs(x)*1e-4,dx*0.1));const g=kind==='extrema'?d1:d2;let px=a,py=g(px);for(let i=1;i<=N;i++){const x=a+i*dx,y=g(x);if(Number.isFinite(py)&&Number.isFinite(y)&&py*y<0){const r=bisect(g,px,x,py,y);if(r!==null)out.push((kind==='extrema'?'Critical point':'Inflection candidate')+' f'+(j+1)+': ('+fmt(r)+', '+fmt(f(r))+')')}px=x;py=y}});
+  return {title:kind==='extrema'?'Critical points / extrema candidates':'Inflection candidates',body:out.length?out.slice(0,100).join(' · '):'No candidates detected at the selected resolution. Classification requires checking derivative sign changes.'};
+ }
+ if(kind==='tangent'){
+  const x0=Number(m.parameter);if(!Number.isFinite(x0))fail('Enter a finite x value.');
+  const f=fns[0],y=f(x0),h=Math.max(1e-5,Math.abs(x0)*1e-5),slope=derivative(f,x0,h);if(!Number.isFinite(y)||!Number.isFinite(slope))fail('Function is undefined near the selected x value.');
+  return {title:'Tangent and normal',body:'At ('+fmt(x0)+', '+fmt(y)+'): slope ≈ '+fmt(slope)+'. Tangent: y - ('+fmt(y)+') = '+fmt(slope)+'(x - ('+fmt(x0)+')). Normal: '+(Math.abs(slope)<1e-12?'x = '+fmt(x0):'y - ('+fmt(y)+') = '+fmt(-1/slope)+'(x - ('+fmt(x0)+')).')};
+ }
+ if(kind==='area'){
+  const lo=Number(m.lower),hi=Number(m.upper);if(!Number.isFinite(lo)||!Number.isFinite(hi)||lo>=hi)fail('Area lower bound must be finite and smaller than upper bound.');
+  const f=fns[0],n=4000,h=(hi-lo)/n;let sum=0;for(let i=0;i<=n;i++){const y=f(lo+i*h);if(!Number.isFinite(y))fail('Function is undefined inside the interval. Split the integral at singularities.');sum+=(i===0||i===n?1:i%2?4:2)*y}
+  return {title:'Numerical signed area',body:'Simpson approximation ≈ '+fmt(sum*h/3)+' on ['+lo+', '+hi+']. Accuracy is not guaranteed for oscillatory or sharply varying functions; check convergence by changing the interval/subdivision.'};
+ }
+ if(kind==='asymptotes'){
+  fns.forEach((f,j)=>{for(let i=1;i<N;i++){const x=a+i*dx,y=f(x),yl=f(x-dx),yr=f(x+dx);if(!Number.isFinite(y)||Math.abs(y)>1e5*Math.max(1,Math.abs(yl),Math.abs(yr)))out.push('Possible vertical asymptote of f'+(j+1)+' near x='+fmt(x))}const L=f(b-dx),R=f(b);if(Number.isFinite(L)&&Number.isFinite(R)&&Math.abs(L-R)<1e-3*Math.max(1,Math.abs(L),Math.abs(R)))out.push('Possible horizontal asymptote near y='+fmt((L+R)/2)+' as x approaches upper range')}
+  );
+  return {title:'Asymptote candidates (heuristic)',body:out.length?[...new Set(out)].slice(0,80).join(' · '):'No asymptote candidates detected in this interval. Numerical detection is heuristic, not proof.'};
+ }
+ fail('Unknown analysis method.');
 }
 self.onmessage=e=>{
-  try { const result=run(e.data); self.postMessage({ok:true,...result}); }
-  catch(err) { self.postMessage({ok:false,error:err&&err.message?err.message:String(err)}); }
+ try{const m=e.data||{};if(m.type==='analyse'){self.postMessage({ok:true,analysis:analyze(m)});return}const result=plot(m);self.postMessage({ok:true,...result})}
+ catch(err){self.postMessage({ok:false,error:err&&err.message?err.message:String(err)})}
 };
