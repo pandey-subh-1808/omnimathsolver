@@ -235,7 +235,8 @@ main.shell>.floating-nav{flex:none}
 x^2-4</textarea></label>
    <div style="display:grid;gap:10px">
     <label>Graph type<select id="graphMode">
-     <option value="2d">2D Cartesian & implicit curves</option>
+     <option value="2d">2D Cartesian &amp; implicit curves</option>
+     <option value="polar">2D polar curves r = f(theta)</option>
      <option value="surface">3D explicit surface (z = f(x,y))</option>
      <option value="curve3d">3D parametric curve (x(t), y(t), z(t))</option>
      <option value="paramSurface">3D parametric surface (x(u,v), y(u,v), z(u,v))</option>
@@ -264,7 +265,7 @@ x^2-4</textarea></label>
   <p id="graphHelp" class="graph-help">2D: enter functions of x such as <code>sin(x)</code>, or implicit equations such as <code>x^2-y^2=0</code>. Angles use radians. Use zoom, pan, hover and the camera menu to export the plot.</p>
   <div class="section-title" style="margin-top:18px">Numerical 2D curve analysis</div>
   <div class="graph-controls">
-   <label>Analysis method<select id="graphAnalysis"><option value="roots">Roots / x-intercepts</option><option value="intersections">Intersections (first two curves)</option><option value="extrema">Local maxima &amp; minima</option><option value="tangent">Tangent and normal at x =</option><option value="area">Signed area under first curve</option></select></label>
+   <label>Analysis method<select id="graphAnalysis"><option value="roots">Roots / x-intercepts</option><option value="intersections">Intersections (first two curves)</option><option value="extrema">Critical points / extrema candidates</option><option value="inflections">Inflection candidates</option><option value="asymptotes">Asymptote candidates (heuristic)</option><option value="tangent">Tangent and normal at x =</option><option value="area">Signed area under first curve</option></select></label>
    <label id="graphParameterLabel">Parameter / x value<input id="graphParameter" type="number" value="0" step="any"></label>
    <label>Lower bound (area)<input id="graphLower" type="number" value="0" step="any"></label>
    <label>Upper bound (area)<input id="graphUpper" type="number" value="1" step="any"></label>
@@ -338,8 +339,8 @@ function boot(){
  if(solverWorker){solverWorker.terminate();solverWorker=null}
  engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
-  solverWorker=new Worker(new URL('./solver-worker.js?build=graphfix3-line33fix',document.baseURI));
-  let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup is taking too long'}},90000);
+  solverWorker=new Worker(new URL('./solver-worker.js?build=math-coverage-v2',document.baseURI));
+  let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup timed out — reload and check the network';if(solverWorker){solverWorker.terminate();solverWorker=null}}},60000);
   solverWorker.onmessage=event=>{
    const data=event.data||{};
    if(data.type==='status'){status.textContent=data.message;return}
@@ -406,7 +407,7 @@ async function calculate(qOverride){
   $('output').innerHTML='<section class="card error"><b>Calculation timed out.</b><p class="hint">The solver stopped this calculation to keep the page responsive. Try a simpler form; the engine is restarting.</p></section>';
   boot();
  },20000);
- solverWorker.postMessage({type:'calculate',expression:q});
+ solverWorker.postMessage({type:'calculate',expression:q,previousAnswer:lastAnswer||'0'});
 }
 function render(data,q){
  lastAnswer=data.plain;
@@ -460,7 +461,7 @@ function graphRange(){
  if(!Number.isFinite(xmin)||!Number.isFinite(xmax)||xmin>=xmax)throw new Error('X minimum must be smaller than X maximum.');
  return {xmin,xmax};
 }
-let activeGraphWorker=null,graphPlotReady=false,graphPlotSequence=0;
+let activeGraphWorker=null,activeGraphAnalysisWorker=null,graphPlotReady=false,graphPlotSequence=0;
 function graphSetStatus(message,state=''){
  const el=$('graphStatus');el.textContent=message;el.className='graph-help '+state;
 }
@@ -496,10 +497,11 @@ function plotGraph(){
  const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
  const worker=new Worker(new URL('./graph-worker.js?build=3dtypes3',document.baseURI));activeGraphWorker=worker;
  const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
- worker.onerror=e=>{worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
+  const plotTimer=setTimeout(()=>{if(seq===graphPlotSequence&&activeGraphWorker===worker){worker.terminate();activeGraphWorker=null;btn.disabled=false;graphSetStatus('Graph calculation timed out. Reduce the range or choose a simpler expression.','error')}},15000);
+ worker.onerror=e=>{clearTimeout(plotTimer);worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
  worker.onmessage=async e=>{
   if(seq!==graphPlotSequence){worker.terminate();return;}
-  const result=e.data;worker.terminate();activeGraphWorker=null;btn.disabled=false;
+  clearTimeout(plotTimer);const result=e.data;worker.terminate();activeGraphWorker=null;btn.disabled=false;
   if(!result||result.error||result.ok===false){graphSetStatus(result?.error||'The graph could not be calculated.','error');return;}
   try{
    const is2d=mode==='2d',is3d=!is2d;
@@ -514,7 +516,7 @@ function plotGraph(){
  worker.postMessage(data);
 }
 function graphShowResults(title,body){
- $('graphResults').innerHTML='<div class="graph-result"><b>'+esc(title)+'</b><span>'+esc(body)+'</span></div>';
+ const card=document.createElement('div'),heading=document.createElement('b'),detail=document.createElement('span');card.className='graph-result';heading.textContent=title;detail.textContent=body;card.append(heading,detail);$('graphResults').replaceChildren(card);
 }
 function graphBisection(fn,a,b){
  let fa=graphEvaluate(fn,a),fb=graphEvaluate(fn,b);if(!Number.isFinite(fa)||!Number.isFinite(fb)||fa*fb>0)return null;
@@ -523,39 +525,19 @@ function graphBisection(fn,a,b){
 }
 function graphDerivative(fn,x,h){return (graphEvaluate(fn,x+h)-graphEvaluate(fn,x-h))/(2*h)}
 function graphAnalysis(){
+ const mode=$('graphMode').value,inputs=graphFunctions(),kind=$('graphAnalysis').value;
+ if(mode!=='2d'){graphShowResults('Analysis unavailable','Switch to 2D Cartesian mode for this analysis.');return}
+ if(!inputs.length){graphShowResults('Analysis error','Enter at least one function.');return}
+ const btn=$('runGraphAnalysis'),btn2=$('analyseGraph');btn.disabled=btn2.disabled=true;graphShowResults('Working','Numerical analysis is running in a background worker…');
+ let worker,settled=false,timer;
+ const finish=()=>{btn.disabled=btn2.disabled=false;if(worker){worker.terminate();if(activeGraphAnalysisWorker===worker)activeGraphAnalysisWorker=null}};
  try{
-  if($('graphMode').value!=='2d')throw new Error('Switch to 2D mode for this analysis.');
-  const inputs=graphFunctions(),{xmin,xmax}=graphRange(),kind=$('graphAnalysis').value;
-  if(!inputs.length)throw new Error('Enter a function first.');
-  const f=graphCompile(inputs[0],'2d'),N=3000,dx=(xmax-xmin)/N,items=[];
-  const fmt=v=>Number(v).toPrecision(9);
-  if(kind==='roots'){
-   let prevX=xmin,prevY=graphEvaluate(f,xmin);
-   for(let i=1;i<=N;i++){const x=xmin+i*dx,y=graphEvaluate(f,x);if(Number.isFinite(prevY)&&Number.isFinite(y)){if(Math.abs(prevY)<1e-9)items.push(prevX);else if(prevY*y<0){const r=graphBisection(f,prevX,x);if(r!==null)items.push(r)}}prevX=x;prevY=y}
-   if(Number.isFinite(prevY)&&Math.abs(prevY)<1e-9)items.push(prevX);
-   const unique=items.filter((v,i)=>items.findIndex(w=>Math.abs(v-w)<1e-5)===i);
-   graphShowResults('Numerical roots',unique.length?unique.map(fmt).join(', '):'No sign-changing roots detected in the selected interval. Tangential roots may be missed.');
-  }else if(kind==='intersections'){
-   if(inputs.length<2)throw new Error('Enter at least two functions, one per line.');
-   const g=graphCompile(inputs[1],'2d');let px=xmin,pd=graphEvaluate(f,px)-graphEvaluate(g,px);
-   for(let i=1;i<=N;i++){const x=xmin+i*dx,d=graphEvaluate(f,x)-graphEvaluate(g,x);if(Number.isFinite(pd)&&Number.isFinite(d)&&pd*d<0){const root=graphBisection({compiled:{evaluate:scope=>graphEvaluate(f,scope.x)-graphEvaluate(g,scope.x)}},px,x);if(root!==null)items.push([root,graphEvaluate(f,root)])}px=x;pd=d}
-   graphShowResults('Curve intersections',items.length?items.map(p=>'('+fmt(p[0])+', '+fmt(p[1])+')').join(' · '):'No crossing intersections detected in this interval. Tangencies may be missed.');
-  }else if(kind==='extrema'){
-   const vals=[];for(let i=1;i<N;i++){const x=xmin+i*dx,ym=graphEvaluate(f,x-dx),y=graphEvaluate(f,x),yp=graphEvaluate(f,x+dx);if([ym,y,yp].every(Number.isFinite)&&((y>ym&&y>yp)||(y<ym&&y<yp)))vals.push((y>ym?'Maximum':'Minimum')+' near ('+fmt(x)+', '+fmt(y)+')')}
-   graphShowResults('Local extrema',vals.length?vals.join(' · '):'No local extrema detected at the current sampling resolution.');
-  }else if(kind==='tangent'){
-   const x0=Number($('graphParameter').value),h=Math.max(1e-5,Math.abs(x0)*1e-5),y0=graphEvaluate(f,x0),m=graphDerivative(f,x0,h);
-   if(!Number.isFinite(y0)||!Number.isFinite(m))throw new Error('Could not evaluate the function near this x value.');
-   const tangent='y - ('+fmt(y0)+') = ('+fmt(m)+')(x - ('+fmt(x0)+'))';
-   const normal=Math.abs(m)<1e-12?'x = '+fmt(x0):'y - ('+fmt(y0)+') = ('+fmt(-1/m)+')(x - ('+fmt(x0)+'))';
-   graphShowResults('Tangent and normal','Tangent: '+tangent+' | Normal: '+normal+' | Slope: '+fmt(m));
-   const lineX=[xmin,xmax];Plotly.addTraces('graphPlot',[{x:lineX,y:lineX.map(x=>y0+m*(x-x0)),name:'Tangent',mode:'lines',line:{dash:'dash'} }]);
-  }else if(kind==='area'){
-   const a=Number($('graphLower').value),b=Number($('graphUpper').value);if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b)throw new Error('Area lower bound must be smaller than upper bound.');
-   const steps=4000,h=(b-a)/steps;let sum=0;for(let i=0;i<=steps;i++){const y=graphEvaluate(f,a+i*h);if(!Number.isFinite(y))throw new Error('Function is undefined within the selected integration interval.');sum+=(i===0||i===steps?1:i%2?4:2)*y}
-   graphShowResults('Approximate signed area','Simpson numerical integral ≈ '+fmt(sum*h/3)+' on ['+a+', '+b+'].');
-  }
- }catch(e){graphShowResults('Analysis error',e.message)}
+  worker=new Worker(new URL('./graph-worker.js?build=analysis-v2',document.baseURI));activeGraphAnalysisWorker=worker;
+  timer=setTimeout(()=>{if(settled)return;settled=true;finish();graphShowResults('Analysis timed out','The worker was stopped to protect browser responsiveness. Narrow the x-range or simplify the expression.')},12000);
+  worker.onmessage=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();const d=e.data||{};if(!d.ok){graphShowResults('Analysis error',d.error||'Analysis failed.');return}graphShowResults(d.analysis.title,d.analysis.body)};
+  worker.onerror=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();graphShowResults('Analysis worker failed',e.message||'Check the connection and retry.')};
+  worker.postMessage({type:'analyse',analysis:kind,expressions:inputs,xmin:$('graphXMin').value,xmax:$('graphXMax').value,parameter:$('graphParameter').value,lower:$('graphLower').value,upper:$('graphUpper').value});
+ }catch(e){clearTimeout(timer);finish();graphShowResults('Analysis error',e.message)}
 }
 function initGraphing(){
  $('plotGraph').onclick=plotGraph;$('analyseGraph').onclick=graphAnalysis;$('runGraphAnalysis').onclick=graphAnalysis;
