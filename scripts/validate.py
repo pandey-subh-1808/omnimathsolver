@@ -8,7 +8,7 @@ solver = (root / "solver-worker.js").read_text(encoding="utf-8")
 graph = (root / "graph-worker.js").read_text(encoding="utf-8")
 html = (root / "index.html").read_text(encoding="utf-8")
 
-match = re.search(r"const PYTHON_CODE=(\"(?:\\\\.|[^\"\\\\])*\");\\nfunction send", solver, re.S)
+match = re.search(r'const PYTHON_CODE=("(?:\\.|[^"\\])*");\nfunction send', solver, re.S)
 if not match:
     raise SystemExit("Could not locate the embedded symbolic-engine Python source.")
 python_source = json.loads(match.group(1))
