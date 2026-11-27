@@ -339,7 +339,7 @@ function boot(){
  if(solverWorker){solverWorker.terminate();solverWorker=null}
  engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
-  solverWorker=new Worker(new URL('./solver-worker.js?build=math-final-v5',document.baseURI));
+  solverWorker=new Worker(new URL('./solver-worker.js?build=math-final-v6',document.baseURI));
   let startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup timed out — reload and check the network';if(solverWorker){solverWorker.terminate();solverWorker=null}}},60000);
   solverWorker.onmessage=event=>{
    const data=event.data||{};
