@@ -341,7 +341,7 @@ function boot(){
  if(solverWorker){solverWorker.terminate();solverWorker=null}
  engineReady=false;status.textContent='Starting mathematics engine…';dot.className='dot';
  try{
-  solverWorker=new Worker(new URL('./solver-worker.js?build=math-final-v7',document.baseURI));
+  solverWorker=new Worker(new URL('./solver-worker.js?build=math-final-v8',document.baseURI));
   startupTimer=setTimeout(()=>{if(!engineReady){dot.className='dot bad';status.textContent='Engine startup timed out — reload and check the network';if(solverWorker){solverWorker.terminate();solverWorker=null}}},60000);
   solverWorker.onmessage=event=>{
    const data=event.data||{};
@@ -473,7 +473,7 @@ function plotGraph(){
  if(!expressions.length){graphSetStatus('Enter an expression before plotting.','error');return;}
  const btn=$('plotGraph');btn.disabled=true;graphSetStatus('Calculating graph points in background…','busy');
  const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
- const worker=new Worker(new URL('./graph-worker.js?build=adaptive-safe-v9',document.baseURI));activeGraphWorker=worker;
+ const worker=new Worker(new URL('./graph-worker.js?build=adaptive-safe-v10',document.baseURI));activeGraphWorker=worker;
  const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
   const plotTimer=setTimeout(()=>{if(seq===graphPlotSequence&&activeGraphWorker===worker){worker.terminate();activeGraphWorker=null;btn.disabled=false;graphSetStatus('Graph calculation timed out. Reduce the range or choose a simpler expression.','error')}},15000);
  worker.onerror=e=>{clearTimeout(plotTimer);worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
@@ -504,7 +504,7 @@ function graphAnalysis(){
  let worker,settled=false,timer;
  const finish=()=>{btn.disabled=btn2.disabled=false;if(worker){worker.terminate();if(activeGraphAnalysisWorker===worker)activeGraphAnalysisWorker=null}};
  try{
-  worker=new Worker(new URL('./graph-worker.js?build=analysis-safe-v9',document.baseURI));activeGraphAnalysisWorker=worker;
+  worker=new Worker(new URL('./graph-worker.js?build=analysis-safe-v10',document.baseURI));activeGraphAnalysisWorker=worker;
   timer=setTimeout(()=>{if(settled)return;settled=true;finish();graphShowResults('Analysis timed out','The worker was stopped to protect browser responsiveness. Narrow the x-range or simplify the expression.')},12000);
   worker.onmessage=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();const d=e.data||{};if(!d.ok){graphShowResults('Analysis error',d.error||'Analysis failed.');return}graphShowResults(d.analysis.title,d.analysis.body);if(d.analysis.overlay&&window.Plotly&&graphPlotReady)Plotly.addTraces('graphPlot',d.analysis.overlay)};
   worker.onerror=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();graphShowResults('Analysis worker failed',e.message||'Check the connection and retry.')};
