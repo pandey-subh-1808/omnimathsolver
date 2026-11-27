@@ -67,7 +67,7 @@ function plot(m){
   const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const rr=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:rr.map((r,j)=>r*Math.cos(theta[j])),y:rr.map((r,j)=>r*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='surface'){
   if(lines.length!==1)fail('3D explicit surface mode accepts exactly one z=f(x,y) expression.');
-  const f=compileLines([lines[0].replace(/^z\\s*=\\s*/i,'')])[0],xs=seq(xmin,xmax,LIMITS.surface),ys=seq(ymin,ymax,LIMITS.surface),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));
+  const f=compileLines([lines[0].replace(/^z\s*=\s*/i,'')])[0],xs=seq(xmin,xmax,LIMITS.surface),ys=seq(ymin,ymax,LIMITS.surface),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));
   traces.push({type:'surface',x:xs,y:ys,z:zz,colorscale:'Viridis',connectgaps:false});
  }else if(mode==='curve3d'){
   if(lines.length!==3)fail('Enter exactly three expressions: x(t), y(t), z(t), one per line.');
