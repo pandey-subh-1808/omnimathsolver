@@ -33,6 +33,24 @@ function seq(a,b,n){return Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1))}
 function range(a,b,name){a=Number(a);b=Number(b);if(!Number.isFinite(a)||!Number.isFinite(b)||a>=b||Math.abs(a)>1e6||Math.abs(b)>1e6)fail(name+' range must be finite, increasing and within ±1,000,000.');return[a,b]}
 function normalizeEq(q){const parts=q.split('=');if(parts.length>2)fail('Use at most one equals sign.');return parts.length===2?'('+parts[0]+')-('+parts[1]+')':q}
 function baseScope(extra={}){return {pi:Math.PI,e:Math.E,...extra}}
+function adaptiveCurve(f,a,b){
+ const points=[];
+ const sample=x=>val(f,baseScope({x}));
+ function split(x0,y0,x1,y1,depth){
+  const xm=(x0+x1)/2,ym=sample(xm);
+  const finite0=Number.isFinite(y0),finite1=Number.isFinite(y1),finitem=Number.isFinite(ym);
+  const scale=Math.max(1,Math.abs(y0)||0,Math.abs(y1)||0,Math.abs(ym)||0);
+  const bend=finite0&&finite1&&finitem?Math.abs(ym-(y0+y1)/2):Infinity;
+  const refine=depth<6&&(!finite0||!finite1||!finitem||bend>0.004*scale);
+  if(refine){split(x0,y0,xm,ym,depth+1);split(xm,ym,x1,y1,depth+1)}
+  else{points.push([x0,y0]);}
+ }
+ const initial=32;
+ for(let i=0;i<initial;i++){const x0=a+(b-a)*i/initial,x1=a+(b-a)*(i+1)/initial;split(x0,sample(x0),x1,sample(x1),0)}
+ points.push([b,sample(b)]);
+ points.sort((p,q)=>p[0]-q[0]);
+ return {x:points.map(p=>p[0]),y:points.map(p=>p[1])};
+}
 function plot(m){
  const mode=m.mode,lines=(m.expressions||[]).map(v=>String(v).trim()).filter(Boolean);
  if(!lines.length)fail('Enter an expression before plotting.');
@@ -42,7 +60,7 @@ function plot(m){
  if(mode==='2d'){
   const implicit=lines[0].includes('y')||lines[0].includes('=');
   if(implicit){if(lines.length!==1)fail('Plot one implicit equation at a time.');const f=compileLines([normalizeEq(lines[0])])[0],xs=seq(xmin,xmax,150),ys=seq(ymin,ymax,150),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));traces.push({type:'contour',name:lines[0],x:xs,y:ys,z:zz,contours:{coloring:'lines',start:0,end:0,size:1},showscale:false,line:{width:2}})}
-  else{const fs=compileLines(lines),xs=seq(xmin,xmax,LIMITS.plot2d);fs.forEach((f,i)=>traces.push({type:'scatter',mode:'lines',name:lines[i],x:xs,y:xs.map(x=>val(f,baseScope({x}))),connectgaps:false}))}
+  else{const fs=compileLines(lines);fs.forEach((f,i)=>{const pts=adaptiveCurve(f,xmin,xmax);traces.push({type:'scatter',mode:'lines',name:lines[i],x:pts.x,y:pts.y,connectgaps:false})})}
  }else if(mode==='polar'){
   const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='polar'){
