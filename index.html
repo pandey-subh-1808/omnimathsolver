@@ -435,33 +435,7 @@ function drawHistory(){
  });
 }
 
-let lastGraphFunctions=[];
-function graphParseExpression(raw){
- let q=raw.trim().replace(/^y\\s*=\\s*/i,'').replace(/^[A-Za-z_]\\w*\\(x\\)\\s*=\\s*/i,'');
- if(!q)throw new Error('Enter at least one function.');
- return q;
-}
-function graphCompile(raw,mode){
- const q=graphParseExpression(raw);
- if(!window.math||!math.compile)throw new Error('Graph mathematics library is still loading. Refresh and try again.');
- const expr=mode==='3d'?q.replace(/^z\\s*=\\s*/i,''):q;
- return {label:raw.trim(),compiled:math.compile(expr),source:expr};
-}
 function graphFunctions(){return $('graphFunctions').value.split(/\r?\n|;/).map(v=>v.trim()).filter(Boolean)}
-function graphEvaluate(fn,x,y){
- const scope={x,y,pi:Math.PI,e:Math.E};
- const value=fn.compiled.evaluate(scope);
- return typeof value==='number'&&Number.isFinite(value)?value:NaN;
-}
-function graphLayout(title){
- const dark=document.documentElement.dataset.theme==='dark';
- return {title:{text:title,font:{size:14}},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:dark?'#e7edf8':'#17243b'},margin:{l:48,r:18,t:42,b:44},xaxis:{title:'x',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'},yaxis:{title:'y',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'},legend:{orientation:'h',y:-0.2},autosize:true};
-}
-function graphRange(){
- const xmin=Number($('graphXMin').value),xmax=Number($('graphXMax').value);
- if(!Number.isFinite(xmin)||!Number.isFinite(xmax)||xmin>=xmax)throw new Error('X minimum must be smaller than X maximum.');
- return {xmin,xmax};
-}
 let activeGraphWorker=null,activeGraphAnalysisWorker=null,graphPlotReady=false,graphPlotSequence=0;
 function graphSetStatus(message,state=''){
  const el=$('graphStatus');el.textContent=message;el.className='graph-help '+state;
@@ -511,7 +485,7 @@ function plotGraph(){
    const plotOptions={responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false};
    if(graphPlotReady) await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
    else await Plotly.newPlot('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
-   graphPlotReady=true;lastGraphFunctions=expressions;
+   graphPlotReady=true;
    graphSetStatus('Plot ready. '+(is2d?'Curve samples are generated in the worker.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
   }catch(err){graphSetStatus('Plot rendering failed: '+err.message,'error');}
  };
@@ -520,12 +494,6 @@ function plotGraph(){
 function graphShowResults(title,body){
  const card=document.createElement('div'),heading=document.createElement('b'),detail=document.createElement('span');card.className='graph-result';heading.textContent=title;detail.textContent=body;card.append(heading,detail);$('graphResults').replaceChildren(card);
 }
-function graphBisection(fn,a,b){
- let fa=graphEvaluate(fn,a),fb=graphEvaluate(fn,b);if(!Number.isFinite(fa)||!Number.isFinite(fb)||fa*fb>0)return null;
- for(let i=0;i<65;i++){const m=(a+b)/2,fm=graphEvaluate(fn,m);if(!Number.isFinite(fm))return null;if(Math.abs(fm)<1e-11)return m;if(fa*fm<=0){b=m;fb=fm}else{a=m;fa=fm}}
- return (a+b)/2;
-}
-function graphDerivative(fn,x,h){return (graphEvaluate(fn,x+h)-graphEvaluate(fn,x-h))/(2*h)}
 function graphAnalysis(){
  const mode=$('graphMode').value,inputs=graphFunctions(),kind=$('graphAnalysis').value;
  if(mode!=='2d'){graphShowResults('Analysis unavailable','Switch to 2D Cartesian mode for this analysis.');return}
