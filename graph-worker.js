@@ -121,8 +121,12 @@ function analyze(m){
  }
  if(kind==='intersections'){
   if(fns.length<2)fail('Enter at least two explicit functions, one per line.');
-  for(let j=0;j<fns.length;j++)for(let k=j+1;k<fns.length;k++){const d=x=>fns[j](x)-fns[k](x);let x0=a,y0=d(x0);for(let i=1;i<=N;i++){const x=a+i*dx,y=d(x);if(Number.isFinite(y0)&&Number.isFinite(y)&&y0*y<0){const r=bisect(d,x0,x,y0,y);if(r!==null)out.push('f'+(j+1)+' ∩ f'+(k+1)+': ('+fmt(r)+', '+fmt(fns[j](r))+')')}x0=x;y0=y}}
-  return {title:'Curve intersections',body:out.length?out.slice(0,100).join(' · '):'No crossing intersections detected. Tangential intersections may require closer sampling.'};
+  for(let j=0;j<fns.length;j++)for(let k=j+1;k<fns.length;k++){
+   const d=x=>fns[j](x)-fns[k](x),ad=x=>Math.abs(d(x));let x0=a,y0=d(x0);
+   for(let i=1;i<=N;i++){const x=a+i*dx,y=d(x);if(Number.isFinite(y0)&&Number.isFinite(y)&&y0*y<0){const r=bisect(d,x0,x,y0,y);if(r!==null)out.push('f'+(j+1)+' ∩ f'+(k+1)+': ('+fmt(r)+', '+fmt(fns[j](r))+')')}x0=x;y0=y}
+   for(let i=1;i<N;i++){const x=a+i*dx,l=ad(x-dx),v=ad(x),r0=ad(x+dx),scale=Math.max(1,l||0,r0||0);if([l,v,r0].every(Number.isFinite)&&v<=l&&v<=r0&&v<0.015*scale){const root=goldenMin(ad,x-dx,x+dx);if(root!==null&&ad(root)<1e-7*scale)out.push('f'+(j+1)+' tangent intersection f'+(k+1)+': ('+fmt(root)+', '+fmt(fns[j](root))+')')}}
+  }
+  return {title:'Curve intersections',body:out.length?[...new Set(out)].slice(0,100).join(' · '):'No intersections detected at the selected resolution. This is numerical evidence, not proof.'};
  }
  if(kind==='extrema'||kind==='inflections'){
   fns.forEach((f,j)=>{const d1=x=>derivative(f,x,Math.max(1e-5,Math.abs(x)*1e-5,dx*0.05)),d2=x=>derivative(d1,x,Math.max(1e-4,Math.abs(x)*1e-4,dx*0.1));const g=kind==='extrema'?d1:d2;let px=a,py=g(px);for(let i=1;i<=N;i++){const x=a+i*dx,y=g(x);if(Number.isFinite(py)&&Number.isFinite(y)&&py*y<0){const r=bisect(g,px,x,py,y);if(r!==null)out.push((kind==='extrema'?'Critical point':'Inflection candidate')+' f'+(j+1)+': ('+fmt(r)+', '+fmt(f(r))+')')}px=x;py=y}});
@@ -131,7 +135,10 @@ function analyze(m){
  if(kind==='tangent'){
   const x0=Number(m.parameter);if(!Number.isFinite(x0))fail('Enter a finite x value.');
   const f=fns[0],y=f(x0),h=Math.max(1e-5,Math.abs(x0)*1e-5),slope=derivative(f,x0,h);if(!Number.isFinite(y)||!Number.isFinite(slope))fail('Function is undefined near the selected x value.');
-  return {title:'Tangent and normal',body:'At ('+fmt(x0)+', '+fmt(y)+'): slope ≈ '+fmt(slope)+'. Tangent: y - ('+fmt(y)+') = '+fmt(slope)+'(x - ('+fmt(x0)+')). Normal: '+(Math.abs(slope)<1e-12?'x = '+fmt(x0):'y - ('+fmt(y)+') = '+fmt(-1/slope)+'(x - ('+fmt(x0)+')).')};
+  const tx=[a,b],ty=tx.map(x=>y+slope*(x-x0)),overlay=[{type:'scatter',mode:'lines',name:'Tangent',x:tx,y:ty,line:{dash:'dash'}}];
+  if(Math.abs(slope)<1e-12)overlay.push({type:'scatter',mode:'lines',name:'Normal',x:[x0,x0],y:[Number(m.ymin),Number(m.ymax)],line:{dash:'dot'}});
+  else{const ns=-1/slope;overlay.push({type:'scatter',mode:'lines',name:'Normal',x:tx,y:tx.map(x=>y+ns*(x-x0)),line:{dash:'dot'}})}
+  return {title:'Tangent and normal',body:'At ('+fmt(x0)+', '+fmt(y)+'): slope ≈ '+fmt(slope)+'. Tangent: y - ('+fmt(y)+') = '+fmt(slope)+'(x - ('+fmt(x0)+')). Normal: '+(Math.abs(slope)<1e-12?'x = '+fmt(x0):'y - ('+fmt(y)+') = '+fmt(-1/slope)+'(x - ('+fmt(x0)+')).'),overlay};
  }
  if(kind==='area'){
   const lo=Number(m.lower),hi=Number(m.upper);if(!Number.isFinite(lo)||!Number.isFinite(hi)||lo>=hi)fail('Area lower bound must be finite and smaller than upper bound.');
