@@ -2,10 +2,11 @@
 'use strict';
 let mathReady=false;
 try {
-  importScripts('https://cdn.jsdelivr.net/npm/mathjs@14.0.1/lib/browser/math.js');
+  try{importScripts('https://cdn.jsdelivr.net/npm/mathjs@14.0.1/lib/browser/math.js')}
+  catch(_){importScripts('https://unpkg.com/mathjs@14.0.1/lib/browser/math.js')}
   mathReady=!!(self.math&&math.compile);
 } catch(e) {
-  self.postMessage({ok:false,error:'Could not load the graph mathematics library. Check your connection and retry.'});
+  self.postMessage({ok:false,error:'Could not load the graph mathematics library from either CDN. Check your connection and retry.'});
 }
 const LIMITS={expr:240,curves:6,plot2d:1600,surface:42,implicit:27,analysis:2400,vector:5};
 function fail(message){throw new Error(message);}
