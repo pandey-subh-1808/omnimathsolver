@@ -21,8 +21,8 @@ self.onmessage=async event=>{
  try{
   py.globals.set('USER_EXPRESSION',String(data.expression||''));
   const previous=String(data.previousAnswer||'0');
-  py.globals.set('PREVIOUS_ANSWER',previous.length<=300?previous:'0');
-  const proxy=await py.runPythonAsync('try:\n LOCALS["Ans"] = P(PREVIOUS_ANSWER)\nexcept Exception:\n LOCALS["Ans"] = LAST_ANSWER_VALUE\nanswer(USER_EXPRESSION)');
+  py.globals.set('PREVIOUS_ANSWER',previous.length<=300?previous:'');
+  const proxy=await py.runPythonAsync('try:\n if PREVIOUS_ANSWER.strip(): LOCALS["Ans"] = P(PREVIOUS_ANSWER)\n else: LOCALS["Ans"] = LAST_ANSWER_VALUE\nexcept Exception:\n LOCALS["Ans"] = LAST_ANSWER_VALUE\nanswer(USER_EXPRESSION)');
   const result=proxy.toJs({dict_converter:Object.fromEntries});proxy.destroy();
   send('result',{expression:data.expression,result});
  }catch(e){
