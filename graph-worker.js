@@ -32,6 +32,8 @@ function plot(m){
   else{const fs=compileLines(lines),xs=seq(xmin,xmax,LIMITS.plot2d);fs.forEach((f,i)=>traces.push({type:'scatter',mode:'lines',name:lines[i],x:xs,y:xs.map(x=>val(f,baseScope({x}))),connectgaps:false}))}
  }else if(mode==='polar'){
   const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
+ }else if(mode==='polar'){
+  const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const rr=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:rr.map((r,j)=>r*Math.cos(theta[j])),y:rr.map((r,j)=>r*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='surface'){
   if(lines.length!==1)fail('3D explicit surface mode accepts exactly one z=f(x,y) expression.');
   const f=compileLines([lines[0].replace(/^z\\s*=\\s*/i,'')])[0],xs=seq(xmin,xmax,LIMITS.surface),ys=seq(ymin,ymax,LIMITS.surface),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));
@@ -102,8 +104,8 @@ function analyze(m){
  }
  if(kind==='area'){
   const lo=Number(m.lower),hi=Number(m.upper);if(!Number.isFinite(lo)||!Number.isFinite(hi)||lo>=hi)fail('Area lower bound must be finite and smaller than upper bound.');
-  const f=fns[0],n=4000,h=(hi-lo)/n;let sum=0;for(let i=0;i<=n;i++){const y=f(lo+i*h);if(!Number.isFinite(y))fail('Function is undefined inside the interval. Split the integral at singularities.');sum+=(i===0||i===n?1:i%2?4:2)*y}
-  return {title:'Numerical signed area',body:'Simpson approximation ≈ '+fmt(sum*h/3)+' on ['+lo+', '+hi+']. Accuracy is not guaranteed for oscillatory or sharply varying functions; check convergence by changing the interval/subdivision.'};
+  const f=fns[0],simpson=n=>{const h=(hi-lo)/n;let sum=0;for(let i=0;i<=n;i++){const y=f(lo+i*h);if(!Number.isFinite(y))fail('Function is undefined inside the interval. Split the integral at singularities.');sum+=(i===0||i===n?1:i%2?4:2)*y}return sum*h/3};const coarse=simpson(2000),fine=simpson(4000),err=Math.abs(fine-coarse)
+  return {title:'Numerical signed area',body:'Composite Simpson approximation ≈ '+fmt(fine)+' on ['+lo+', '+hi+']. Difference between 2,000 and 4,000 panels: '+fmt(err)+'. '+(err<=1e-7*Math.max(1,Math.abs(fine))?'The two resolutions agree within the displayed tolerance.':'Convergence is not established; increase resolution or split at discontinuities/singularities.')};
  }
  if(kind==='asymptotes'){
   fns.forEach((f,j)=>{for(let i=1;i<N;i++){const x=a+i*dx,y=f(x),yl=f(x-dx),yr=f(x+dx);if(!Number.isFinite(y)||Math.abs(y)>1e5*Math.max(1,Math.abs(yl),Math.abs(yr)))out.push('Possible vertical asymptote of f'+(j+1)+' near x='+fmt(x))}const L=f(b-dx),R=f(b);if(Number.isFinite(L)&&Number.isFinite(R)&&Math.abs(L-R)<1e-3*Math.max(1,Math.abs(L),Math.abs(R)))out.push('Possible horizontal asymptote near y='+fmt((L+R)/2)+' as x approaches upper range')}
