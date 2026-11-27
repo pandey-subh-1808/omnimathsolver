@@ -536,7 +536,7 @@ function graphAnalysis(){
  try{
   worker=new Worker(new URL('./graph-worker.js?build=analysis-safe-v4',document.baseURI));activeGraphAnalysisWorker=worker;
   timer=setTimeout(()=>{if(settled)return;settled=true;finish();graphShowResults('Analysis timed out','The worker was stopped to protect browser responsiveness. Narrow the x-range or simplify the expression.')},12000);
-  worker.onmessage=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();const d=e.data||{};if(!d.ok){graphShowResults('Analysis error',d.error||'Analysis failed.');return}graphShowResults(d.analysis.title,d.analysis.body)};
+  worker.onmessage=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();const d=e.data||{};if(!d.ok){graphShowResults('Analysis error',d.error||'Analysis failed.');return}graphShowResults(d.analysis.title,d.analysis.body);if(d.analysis.overlay&&window.Plotly&&graphPlotReady)Plotly.addTraces('graphPlot',d.analysis.overlay)};
   worker.onerror=e=>{if(settled)return;settled=true;clearTimeout(timer);finish();graphShowResults('Analysis worker failed',e.message||'Check the connection and retry.')};
   worker.postMessage({type:'analyse',analysis:kind,expressions:inputs,xmin:$('graphXMin').value,xmax:$('graphXMax').value,parameter:$('graphParameter').value,lower:$('graphLower').value,upper:$('graphUpper').value});
  }catch(e){clearTimeout(timer);finish();graphShowResults('Analysis error',e.message)}
