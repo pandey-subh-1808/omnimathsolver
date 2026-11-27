@@ -501,7 +501,7 @@ function plotGraph(){
   try{
    const is2d=mode==='2d',is3d=!is2d;
    const title={ '2d':'2D function plot',surface:'3D explicit surface',curve3d:'3D parametric curve',paramSurface:'3D parametric surface',implicit:'3D implicit surface',cylindrical:'Cylindrical-coordinate surface',spherical:'Spherical-coordinate surface',vector3d:'3D vector field'}[mode];
-   await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d),{responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false});
+   const plotOptions={responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false};\n   if(graphPlotReady) await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);\n   else await Plotly.newPlot('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
    graphPlotReady=true;lastGraphFunctions=expressions;
    graphSetStatus('Plot ready. '+(is2d?'700 samples per curve.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
   }catch(err){graphSetStatus('Plot rendering failed: '+err.message,'error');}
