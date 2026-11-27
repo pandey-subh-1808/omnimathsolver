@@ -191,7 +191,9 @@ main.shell>.floating-nav{flex:none}
 #graphStatus{min-height:20px}
 #graphStatus.busy{color:var(--blue);font-weight:700}
 #graphStatus.error{color:var(--red);font-weight:700}
-#plotGraph:disabled{opacity:.55;cursor:wait}
+#plotGraph{background:var(--blue)!important;color:#fff!important;border:1px solid var(--blue)!important;min-width:170px;min-height:44px;font-weight:700;opacity:1!important;visibility:visible!important;text-indent:0!important;-webkit-text-fill-color:#fff!important}
+#plotGraph:disabled,#plotGraph:disabled:hover{background:var(--blue)!important;color:#fff!important;border-color:var(--blue)!important;opacity:1!important;filter:none!important;transform:none!important;cursor:wait}
+#plotGraph:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 40%,transparent);outline-offset:3px}
 @media(max-width:600px){.graph-range-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 @media(max-width:600px){.graph-controls{grid-template-columns:1fr}.graph-plot{height:340px;min-height:280px}}
