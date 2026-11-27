@@ -79,6 +79,6 @@ The browser solver exposes the following commands where SymPy can solve the supp
 - Matrix operations are limited to 8 × 8. ODE order is limited to 6; ordinary derivatives and mixed partials are limited to 12; series order is limited to 20.
 - Numerical integration is accepted only when two working precisions agree within a tolerance. This check is evidence of numerical stability, not a proof of accuracy; singular and oscillatory integrals need special treatment.
 - The previous-answer token `Ans` uses the last result in the current page session. Calculation history is stored locally in this browser and can be cleared from the History section.
-- The symbolic engine and graphing libraries are downloaded from public CDNs. First load and graphing require an internet connection; fully offline operation is not currently supported.
+- The symbolic engine and graphing libraries are downloaded from public CDNs, with a secondary CDN fallback for major runtime dependencies. First load and graphing still require an internet connection; fully offline operation is not currently supported.
 - Initial/boundary-value ODE/PDE workflows, symbolic assumptions, units, certified root isolation, rigorous interval arithmetic, adaptive 3D meshing and guaranteed convergence are not implemented. Some PDEs, recurrences, nonlinear systems, transforms and integrals may remain unevaluated.
 - This educational workbench is not a complete MATLAB clone or a replacement for MATLAB's toolboxes. Independently verify important results before using them in assessed or safety-critical work.
