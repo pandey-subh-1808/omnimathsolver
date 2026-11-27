@@ -63,8 +63,6 @@ function plot(m){
   else{const fs=compileLines(explicitAssignments);fs.forEach((f,i)=>{const pts=adaptiveCurve(f,xmin,xmax);traces.push({type:'scatter',mode:'lines',name:lines[i],x:pts.x,y:pts.y,connectgaps:false})})}
  }else if(mode==='polar'){
   const polarLines=lines.map(s=>s.replace(/^r(?:\s*\([^)]*\))?\s*=\s*/i,'')),fs=compileLines(polarLines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
- }else if(mode==='polar'){
-  const fs=compileLines(lines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const rr=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:rr.map((r,j)=>r*Math.cos(theta[j])),y:rr.map((r,j)=>r*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='surface'){
   if(lines.length!==1)fail('3D explicit surface mode accepts exactly one z=f(x,y) expression.');
   const f=compileLines([lines[0].replace(/^z\s*=\s*/i,'')])[0],xs=seq(xmin,xmax,LIMITS.surface),ys=seq(ymin,ymax,LIMITS.surface),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));
@@ -106,9 +104,10 @@ function plot(m){
 function bisect(f,a,b,fa,fb){for(let i=0;i<65;i++){const mid=(a+b)/2,fm=f(mid);if(!Number.isFinite(fm))return null;if(Math.abs(fm)<1e-11||Math.abs(b-a)<1e-11*Math.max(1,Math.abs(mid)))return mid;if(fa*fm<=0){b=mid;fb=fm}else{a=mid;fa=fm}}return(a+b)/2}
 function goldenMin(g,a,b){const r=(Math.sqrt(5)-1)/2;let c=b-r*(b-a),d=a+r*(b-a),fc=g(c),fd=g(d);for(let i=0;i<55;i++){if(!Number.isFinite(fc)||!Number.isFinite(fd))return null;if(fc<fd){b=d;d=c;fd=fc;c=b-r*(b-a);fc=g(c)}else{a=c;c=d;fc=fd;d=a+r*(b-a);fd=g(d)}}return(a+b)/2}
 function analyze(m){
- const lines=(m.expressions||[]).map(String).map(s=>s.trim()).filter(Boolean),kind=m.analysis;
- if(!lines.length)fail('Enter at least one function.');
- if(lines.some(s=>/\by\b/.test(s)||s.includes('=')))fail('Curve analysis currently requires explicit functions of x, not implicit equations.');
+ const rawLines=(m.expressions||[]).map(String).map(s=>s.trim()).filter(Boolean),kind=m.analysis;
+ if(!rawLines.length)fail('Enter at least one function.');
+ const lines=rawLines.map(s=>s.replace(/^[A-Za-z_]\w*\(\s*x\s*\)\s*=\s*/i,''));
+ if(lines.some(s=>/\by\b/.test(s)||s.includes('=')))fail('Curve analysis requires explicit functions of x, not implicit equations.');
  const [a,b]=range(m.xmin,m.xmax,'X'),[ymin,ymax]=range(m.ymin,m.ymax,'Y'),fs=compileLines(lines),N=LIMITS.analysis,dx=(b-a)/N,fmt=v=>Number(v).toPrecision(9),out=[];
  const fns=fs.map(f=>x=>val(f,baseScope({x})));
  const derivative=(f,x,h)=>{const p=f(x+h),q=f(x-h);return Number.isFinite(p)&&Number.isFinite(q)?(p-q)/(2*h):NaN};
