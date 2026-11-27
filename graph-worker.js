@@ -109,7 +109,7 @@ function analyze(m){
  const lines=(m.expressions||[]).map(String).map(s=>s.trim()).filter(Boolean),kind=m.analysis;
  if(!lines.length)fail('Enter at least one function.');
  if(lines.some(s=>s.includes('y')||s.includes('=')))fail('Curve analysis currently requires explicit functions of x, not implicit equations.');
- const [a,b]=range(m.xmin,m.xmax,'X'),fs=compileLines(lines),N=LIMITS.analysis,dx=(b-a)/N,fmt=v=>Number(v).toPrecision(9),out=[];
+ const [a,b]=range(m.xmin,m.xmax,'X'),[ymin,ymax]=range(m.ymin,m.ymax,'Y'),fs=compileLines(lines),N=LIMITS.analysis,dx=(b-a)/N,fmt=v=>Number(v).toPrecision(9),out=[];
  const fns=fs.map(f=>x=>val(f,baseScope({x})));
  const derivative=(f,x,h)=>{const p=f(x+h),q=f(x-h);return Number.isFinite(p)&&Number.isFinite(q)?(p-q)/(2*h):NaN};
  if(kind==='roots'){
@@ -129,14 +129,14 @@ function analyze(m){
   return {title:'Curve intersections',body:out.length?[...new Set(out)].slice(0,100).join(' · '):'No intersections detected at the selected resolution. This is numerical evidence, not proof.'};
  }
  if(kind==='extrema'||kind==='inflections'){
-  fns.forEach((f,j)=>{const d1=x=>derivative(f,x,Math.max(1e-5,Math.abs(x)*1e-5,dx*0.05)),d2=x=>derivative(d1,x,Math.max(1e-4,Math.abs(x)*1e-4,dx*0.1));const g=kind==='extrema'?d1:d2;let px=a,py=g(px);for(let i=1;i<=N;i++){const x=a+i*dx,y=g(x);if(Number.isFinite(py)&&Number.isFinite(y)&&py*y<0){const r=bisect(g,px,x,py,y);if(r!==null)out.push((kind==='extrema'?'Critical point':'Inflection candidate')+' f'+(j+1)+': ('+fmt(r)+', '+fmt(f(r))+')')}px=x;py=y}});
+  fns.forEach((f,j)=>{const d1=x=>derivative(f,x,Math.max(1e-5,Math.abs(x)*1e-5,dx*0.05)),d2=x=>derivative(d1,x,Math.max(1e-4,Math.abs(x)*1e-4,dx*0.1));const g=kind==='extrema'?d1:d2;let px=a,py=g(px);for(let i=1;i<=N;i++){const x=a+i*dx,y=g(x);if(Number.isFinite(py)&&Number.isFinite(y)&&py*y<0){const r=bisect(g,px,x,py,y);if(r!==null){if(kind==='extrema'){const eps=Math.max(dx*0.25,1e-6),left=d1(r-eps),right=d1(r+eps),label=left>0&&right<0?'Local maximum':left<0&&right>0?'Local minimum':'Stationary candidate';out.push(label+' f'+(j+1)+': ('+fmt(r)+', '+fmt(f(r))+')')}else out.push('Inflection candidate f'+(j+1)+': ('+fmt(r)+', '+fmt(f(r))+')')}}px=x;py=y}});
   return {title:kind==='extrema'?'Critical points / extrema candidates':'Inflection candidates',body:out.length?out.slice(0,100).join(' · '):'No candidates detected at the selected resolution. Classification requires checking derivative sign changes.'};
  }
  if(kind==='tangent'){
   const x0=Number(m.parameter);if(!Number.isFinite(x0))fail('Enter a finite x value.');
   const f=fns[0],y=f(x0),h=Math.max(1e-5,Math.abs(x0)*1e-5),slope=derivative(f,x0,h);if(!Number.isFinite(y)||!Number.isFinite(slope))fail('Function is undefined near the selected x value.');
   const tx=[a,b],ty=tx.map(x=>y+slope*(x-x0)),overlay=[{type:'scatter',mode:'lines',name:'Tangent',x:tx,y:ty,line:{dash:'dash'}}];
-  if(Math.abs(slope)<1e-12)overlay.push({type:'scatter',mode:'lines',name:'Normal',x:[x0,x0],y:[Number(m.ymin),Number(m.ymax)],line:{dash:'dot'}});
+  if(Math.abs(slope)<1e-12)overlay.push({type:'scatter',mode:'lines',name:'Normal',x:[x0,x0],y:[ymin,ymax],line:{dash:'dot'}});
   else{const ns=-1/slope;overlay.push({type:'scatter',mode:'lines',name:'Normal',x:tx,y:tx.map(x=>y+ns*(x-x0)),line:{dash:'dot'}})}
   return {title:'Tangent and normal',body:'At ('+fmt(x0)+', '+fmt(y)+'): slope ≈ '+fmt(slope)+'. Tangent: y - ('+fmt(y)+') = '+fmt(slope)+'(x - ('+fmt(x0)+')). Normal: '+(Math.abs(slope)<1e-12?'x = '+fmt(x0):'y - ('+fmt(y)+') = '+fmt(-1/slope)+'(x - ('+fmt(x0)+')).'),overlay};
  }
