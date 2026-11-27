@@ -292,7 +292,7 @@ x^2-4</textarea></label>
 </main>
 <script>
 (()=>{'use strict';
-const $=id=>document.getElementById(id);let solverWorker=null,engineReady=false,lastAnswer='',history=[],calculationInProgress=false,calculationTimer=null;
+const $=id=>document.getElementById(id);let solverWorker=null,engineReady=false,lastAnswer='',history=(()=>{try{return JSON.parse(localStorage.getItem('omnimath-history')||'[]').filter(v=>v&&typeof v.q==='string'&&typeof v.answer==='string').slice(0,15)}catch(_){return []}})(),calculationInProgress=false,calculationTimer=null;
 const samples=[
 ['Definite integral','integrate(sin(x), x, 0, pi)'],
 ['Advanced integral','integrate(exp(x)*(1+sin(x))/(1+cos(x)), x)'],
@@ -418,8 +418,9 @@ function render(data,q){
  data.steps.forEach((s,i)=>{const plainStep=(s.label==='Methods attempted'||s.label==='Status');html+='<div class="step"><div class="num">'+(i+1)+'</div><div class="step-body"><b>'+esc(s.label)+'</b>'+(plainStep?'<p class="hint">'+esc(s.plain)+'</p>':'<div>\\['+s.latex+'\\]</div>')+'</div></div>'});
  html+='</section>';$('output').innerHTML=html;
  if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('output')]).catch(()=>{});
- history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);drawHistory();
+ history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);saveHistory();drawHistory();
 }
+function saveHistory(){try{localStorage.setItem('omnimath-history',JSON.stringify(history.slice(0,15)))}catch(_){}}
 function drawHistory(){
  const host=$('history');host.replaceChildren();
  if(!history.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='Your recent calculations will appear here.';host.append(empty);return}
@@ -556,7 +557,7 @@ function init(){
  $('clear').onclick=()=>{$('input').value='';$('output').innerHTML='<section class="card"><b>Solution &amp; working</b><p class="hint">Your answer and step-by-step working will appear here after you click Solve expression.</p></section>';preview()};
  $('backspace').onclick=()=>{const t=$('input'),a=t.selectionStart,b=t.selectionEnd;if(a===b&&a>0)t.setRangeText('',a-1,b,'end');else t.setRangeText('',a,b,'end');preview();t.focus()};
  $('themeBtn').onclick=()=>{const dark=document.documentElement.dataset.theme!=='dark';document.documentElement.dataset.theme=dark?'dark':'light';$('themeBtn').setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');$('themeBtn').textContent=dark?'☀':'◐';};
- $('clearHistory').onclick=()=>{history=[];drawHistory()};
+ $('clearHistory').onclick=()=>{history=[];saveHistory();drawHistory()};
  const setupToggle=(buttonId,panelId,showText,hideText)=>{
   const button=$(buttonId),panel=$(panelId);
   button.onclick=()=>{
@@ -567,7 +568,7 @@ function init(){
   };
  };
  setupToggle('toggleKeypad','keypadPanel','Show keypad + tools','Hide keypad + tools');
- $('copy').onclick=()=>{if(lastAnswer)navigator.clipboard?.writeText(lastAnswer)};
+ $('copy').onclick=async()=>{if(!lastAnswer)return;try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard access is unavailable in this browser context.');await navigator.clipboard.writeText(lastAnswer);$('copy').textContent='Copied ✓';setTimeout(()=>$('copy').textContent='Copy answer',1400)}catch(e){$('copy').title='Copy failed: '+e.message}};
  keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
  operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
  samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();calculate()};$('examples').append(b)});
