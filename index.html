@@ -391,7 +391,7 @@ function expressionTex(q){
 function preview(){
  const q=$('input').value.trim();
  $('preview').textContent=q?'\\('+expressionTex(q)+'\\)':'';
- if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{});
+ if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('preview')]).catch(()=>{$('preview').title='Math typesetting failed; the expression is still available as text.'});else $('preview').title=q?'Math typesetting library unavailable; raw expression shown.':'';
 }
 async function calculate(qOverride){
  const q=(qOverride!==undefined?qOverride:$('input').value).trim();
@@ -413,13 +413,13 @@ async function calculate(qOverride){
 }
 function render(data,q){
  lastAnswer=data.plain;
- const notSolved=data.title.includes('no antiderivative found');
+ const notSolved=data.title.includes('no antiderivative found'),mathTypeset=!!window.MathJax?.typesetPromise;
  let html='<section class="card"><div class="row" style="justify-content:space-between"><div class="section-title" style="margin:0">'+(notSolved?'Integration status':'Result')+'</div><span class="pill">'+esc(data.title)+'</span></div>';
  if(notSolved) html+='<div class="error"><b>Not solved.</b> The engine tried several symbolic transformations and integration strategies but could not find a closed-form antiderivative. It will not present the unevaluated integral as a solution.</div>';
- html+='<div class="result'+(notSolved?' unresolved':'')+'">\\['+data.latex+'\\]</div><div class="section-title">Mathematical working</div>';
- data.steps.forEach((s,i)=>{const plainStep=(s.label==='Methods attempted'||s.label==='Status');html+='<div class="step"><div class="num">'+(i+1)+'</div><div class="step-body"><b>'+esc(s.label)+'</b>'+(plainStep?'<p class="hint">'+esc(s.plain)+'</p>':'<div>\\['+s.latex+'\\]</div>')+'</div></div>'});
+ html+='<div class="result'+(notSolved?' unresolved':'')+'">'+(mathTypeset?'\\['+data.latex+'\\]':esc(data.plain))+'</div><div class="section-title">Mathematical working</div>';
+ data.steps.forEach((s,i)=>{const plainStep=!mathTypeset||s.label==='Methods attempted'||s.label==='Status';html+='<div class="step"><div class="num">'+(i+1)+'</div><div class="step-body"><b>'+esc(s.label)+'</b>'+(plainStep?'<p class="hint">'+esc(s.plain)+'</p>':'<div>\\['+s.latex+'\\]</div>')+'</div></div>'});
  html+='</section>';$('output').innerHTML=html;
- if(window.MathJax?.typesetPromise)MathJax.typesetPromise([$ ('output')]).catch(()=>{});
+ if(mathTypeset)MathJax.typesetPromise([$ ('output')]).catch(()=>{$('output').title='Math typesetting failed; plain results remain available.'});
  history.unshift({q,answer:data.plain,title:data.title});history=history.slice(0,15);saveHistory();drawHistory();
 }
 function saveHistory(){try{localStorage.setItem('omnimath-history',JSON.stringify(history.slice(0,15)))}catch(_){}}
