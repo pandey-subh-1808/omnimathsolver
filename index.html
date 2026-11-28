@@ -800,3 +800,43 @@ function init(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script></body></html>
+
+
+/* Sidebar width regression fix — keep the desktop rail at a fixed width */
+@media (min-width: 761px) {
+  body > main.shell { padding-left: 224px !important; }
+  body > main.shell > nav.floating-nav {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: 194px !important;
+    min-width: 194px !important;
+    max-width: 194px !important;
+    flex: 0 0 194px !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  body > main.shell > nav.floating-nav .nav-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+@media (max-width: 760px) {
+  body > main.shell { padding-left: 10px !important; }
+  body > main.shell > nav.floating-nav {
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    width: calc(100% - 16px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    transform: translateX(-50%) !important;
+    flex: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    flex-direction: row !important;
+  }
+}
