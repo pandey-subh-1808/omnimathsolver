@@ -536,6 +536,73 @@ main.shell{position:relative;z-index:1;background:transparent!important}
 [data-theme=dark] body::before{opacity:.27;background-image:linear-gradient(rgba(111,151,208,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(111,151,208,.12) 1px,transparent 1px)}
 @media(prefers-reduced-motion:reduce){body::after{animation:none}}
 
+
+
+/* OmniMath graph studio — substantial, visible workspace polish */
+#graphSection>.card{
+ position:relative;
+ padding:clamp(18px,2.4vw,30px)!important;
+ border:1px solid color-mix(in srgb,#7189ff 24%,var(--line))!important;
+ border-radius:24px!important;
+ background:
+  radial-gradient(ellipse at 96% 0%,rgba(105,91,235,.15),transparent 34%),
+  linear-gradient(145deg,color-mix(in srgb,var(--panel) 96%,#172d51),var(--panel))!important;
+ box-shadow:0 20px 55px rgba(15,32,64,.14),inset 0 1px 0 rgba(255,255,255,.12)!important;
+}
+#graphSection .section-heading{align-items:center;margin-bottom:20px}
+#graphSection .eyebrow{display:inline-flex;align-items:center;gap:8px;color:#8b7bf0;font-size:.68rem;letter-spacing:.17em;font-weight:900}
+#graphSection .eyebrow:before{content:"";width:24px;height:2px;border-radius:2px;background:linear-gradient(90deg,#3e9fe9,#9b70ef)}
+#graphSection h2{font-size:clamp(1.45rem,2.5vw,2rem);letter-spacing:-.045em}
+#graphSection .graph-controls{
+ display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,1fr);gap:18px;
+ padding:18px;border:1px solid color-mix(in srgb,#6f8cb9 25%,var(--line));
+ border-radius:19px;
+ background:linear-gradient(145deg,rgba(65,100,153,.10),rgba(94,83,181,.055));
+}
+#graphSection .graph-controls>label,
+#graphSection .graph-controls>div>label{font-size:.78rem;color:var(--ink);font-weight:800;letter-spacing:.01em}
+#graphSection .graph-controls textarea{
+ min-height:190px;padding:17px;border-radius:14px;
+ background:linear-gradient(145deg,color-mix(in srgb,var(--soft) 88%,#1c3d64),var(--soft));
+ border:1px solid color-mix(in srgb,#5c8dc4 36%,var(--line));
+ font-size:.9rem;line-height:1.8;box-shadow:inset 0 2px 8px rgba(9,25,48,.10);
+}
+#graphSection .graph-controls input,#graphSection .graph-controls select{
+ min-height:45px;border-radius:12px;padding:10px 13px;
+ background:color-mix(in srgb,var(--panel) 78%,#24466a);
+ border:1px solid color-mix(in srgb,#6c91c0 32%,var(--line));
+ font-weight:700;transition:border-color .18s,box-shadow .18s,transform .18s;
+}
+#graphSection .graph-controls input:focus,#graphSection .graph-controls textarea:focus,#graphSection .graph-controls select:focus{
+ outline:none;border-color:#7e77f0;box-shadow:0 0 0 3px rgba(111,105,238,.17);
+}
+#graphSection .graph-range-grid{gap:12px}
+#graphSection .graph-range-grid label{font-size:.7rem!important;color:var(--muted)!important}
+#graphSection .graph-actions{gap:10px;margin:17px 0}
+#graphSection .graph-actions .btn{min-height:46px;padding:11px 20px;border-radius:13px;font-weight:800;transition:transform .18s,box-shadow .18s}
+#graphSection .graph-actions .btn:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(60,91,190,.20)}
+#graphSection #plotGraph{background:linear-gradient(120deg,#365fe7,#7559e6 62%,#9b62dc)!important;border:0!important;box-shadow:0 9px 22px rgba(79,83,214,.25)}
+#graphStatus{margin:12px 0;padding:10px 13px;border-radius:11px;background:color-mix(in srgb,var(--soft) 80%,#5779aa);border:1px solid var(--line);font-size:.78rem}
+#graphStatus.busy{color:#8b7bf0;background:rgba(113,103,230,.10)}
+#graphStatus.error{color:#e24b58;background:rgba(226,75,88,.09);border-color:rgba(226,75,88,.38)}
+#graphSection .graph-plot{
+ height:clamp(360px,54vh,620px);min-height:340px;margin:14px 0 16px;
+ border-radius:18px!important;border:1px solid #35516e!important;
+ background:linear-gradient(145deg,#0a1728,#10263c)!important;
+ box-shadow:0 14px 38px rgba(7,18,34,.23);overflow:hidden;
+}
+#graphSection #graphHelp{padding:10px 13px;border-left:3px solid #8271eb;background:rgba(117,103,220,.07);border-radius:0 10px 10px 0}
+#graphSection .section-title{margin-top:24px;padding-bottom:9px;border-bottom:1px solid var(--line);font-size:.78rem}
+#graphSection .graph-results{gap:12px}
+#graphSection .graph-result{border-radius:14px;background:linear-gradient(145deg,var(--panel),var(--soft));padding:15px}
+@media(max-width:760px){
+ #graphSection>.card{padding:14px!important;border-radius:17px!important}
+ #graphSection .graph-controls{grid-template-columns:1fr;padding:12px;gap:12px}
+ #graphSection .graph-controls textarea{min-height:135px}
+ #graphSection .graph-plot{height:390px;min-height:310px}
+ #graphSection .graph-actions .btn{flex:1 1 auto}
+}
+
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
@@ -853,7 +920,7 @@ function plotGraph(){
  if(!expressions.length){graphSetStatus('Enter an expression before plotting.','error');return;}
  const btn=$('plotGraph');btn.disabled=true;graphSetStatus('Calculating graph points in background…','busy');
  const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
- const worker=new Worker(new URL('./graph-worker.js?build=range-clamp-v12',document.baseURI));activeGraphWorker=worker;
+ const worker=new Worker(new URL('./graph-worker.js?build=range-clamp-v13',document.baseURI));activeGraphWorker=worker;
  const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
   const plotTimer=setTimeout(()=>{if(seq===graphPlotSequence&&activeGraphWorker===worker){worker.terminate();activeGraphWorker=null;btn.disabled=false;graphSetStatus('Graph calculation timed out. Reduce the range or choose a simpler expression.','error')}},15000);
  worker.onerror=e=>{clearTimeout(plotTimer);worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
@@ -865,8 +932,12 @@ function plotGraph(){
    const is2d=mode==='2d'||mode==='polar',is3d=!is2d;
    const title={ '2d':'2D function plot',polar:'2D polar curve plot',surface:'3D explicit surface',curve3d:'3D parametric curve',paramSurface:'3D parametric surface',implicit:'3D implicit surface',cylindrical:'Cylindrical-coordinate surface',spherical:'Spherical-coordinate surface',vector3d:'3D vector field'}[mode];
    const plotOptions={responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false};
-   if(graphPlotReady) await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d,{xmin:Number(data.xmin),xmax:Number(data.xmax),ymin:Number(data.ymin),ymax:Number(data.ymax),zmin:Number(data.zmin),zmax:Number(data.zmax)}),plotOptions);
-   else await Plotly.newPlot('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
+   const plotNode=$('graphPlot');
+   const plotLimits={xmin:Number(data.xmin),xmax:Number(data.xmax),ymin:Number(data.ymin),ymax:Number(data.ymax),zmin:Number(data.zmin),zmax:Number(data.zmax)};
+   /* Rebuild instead of react(): Plotly.react can retain stale 2D/3D scene
+      internals when switching trace families and throw null-axis errors. */
+   if(graphPlotReady){Plotly.purge(plotNode);graphPlotReady=false;}
+   await Plotly.newPlot(plotNode,result.traces,graphLayout(title,is3d,plotLimits),plotOptions);
    graphPlotReady=true;
    graphSetStatus('Plot ready. '+(is2d?'Curve samples are generated in the worker.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
   }catch(err){graphSetStatus('Plot rendering failed: '+err.message,'error');}
