@@ -795,11 +795,20 @@ let activeGraphWorker=null,activeGraphAnalysisWorker=null,graphPlotReady=false,g
 function graphSetStatus(message,state=''){
  const el=$('graphStatus');el.textContent=message;el.className='graph-help '+state;
 }
-function graphLayout(title,is3d=false){
+function graphLayout(title,is3d=false,limits=null){
  const dark=document.documentElement.dataset.theme==='dark';
+ const grid=dark?'#344155':'#e2e8f0';
  const layout={title:{text:title,font:{size:14}},paper_bgcolor:'transparent',plot_bgcolor:'transparent',font:{color:dark?'#e7edf8':'#17243b'},margin:{l:48,r:18,t:42,b:44},autosize:true};
- if(is3d)layout.scene={xaxis:{title:'x',backgroundcolor:'rgba(0,0,0,0)',gridcolor:dark?'#344155':'#e2e8f0'},yaxis:{title:'y',backgroundcolor:'rgba(0,0,0,0)',gridcolor:dark?'#344155':'#e2e8f0'},zaxis:{title:'z',backgroundcolor:'rgba(0,0,0,0)',gridcolor:dark?'#344155':'#e2e8f0'},aspectmode:'data'};
- else {layout.xaxis={title:'x',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'};layout.yaxis={title:'y',gridcolor:dark?'#344155':'#e2e8f0',zerolinecolor:dark?'#8290a5':'#94a3b8'};layout.legend={orientation:'h',y:-0.2};}
+ if(is3d){
+  const scene={xaxis:{title:'x',backgroundcolor:'rgba(0,0,0,0)',gridcolor:grid},yaxis:{title:'y',backgroundcolor:'rgba(0,0,0,0)',gridcolor:grid},zaxis:{title:'z',backgroundcolor:'rgba(0,0,0,0)',gridcolor:grid},aspectmode:'data'};
+  if(limits){scene.xaxis.range=[limits.xmin,limits.xmax];scene.yaxis.range=[limits.ymin,limits.ymax];scene.zaxis.range=[limits.zmin,limits.zmax];}
+  layout.scene=scene;
+ }else{
+  layout.xaxis={title:'x',gridcolor:grid,zerolinecolor:dark?'#8290a5':'#94a3b8'};
+  layout.yaxis={title:'y',gridcolor:grid,zerolinecolor:dark?'#8290a5':'#94a3b8'};
+  if(limits){layout.xaxis.range=[limits.xmin,limits.xmax];layout.yaxis.range=[limits.ymin,limits.ymax];layout.xaxis.autorange=false;layout.yaxis.autorange=false;}
+  layout.legend={orientation:'h',y:-0.2};
+ }
  return layout;
 }
 function graphModeChanged(){
@@ -826,7 +835,7 @@ function plotGraph(){
  if(!expressions.length){graphSetStatus('Enter an expression before plotting.','error');return;}
  const btn=$('plotGraph');btn.disabled=true;graphSetStatus('Calculating graph points in background…','busy');
  const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
- const worker=new Worker(new URL('./graph-worker.js?build=adaptive-safe-v11',document.baseURI));activeGraphWorker=worker;
+ const worker=new Worker(new URL('./graph-worker.js?build=range-clamp-v12',document.baseURI));activeGraphWorker=worker;
  const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
   const plotTimer=setTimeout(()=>{if(seq===graphPlotSequence&&activeGraphWorker===worker){worker.terminate();activeGraphWorker=null;btn.disabled=false;graphSetStatus('Graph calculation timed out. Reduce the range or choose a simpler expression.','error')}},15000);
  worker.onerror=e=>{clearTimeout(plotTimer);worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
@@ -838,7 +847,7 @@ function plotGraph(){
    const is2d=mode==='2d'||mode==='polar',is3d=!is2d;
    const title={ '2d':'2D function plot',polar:'2D polar curve plot',surface:'3D explicit surface',curve3d:'3D parametric curve',paramSurface:'3D parametric surface',implicit:'3D implicit surface',cylindrical:'Cylindrical-coordinate surface',spherical:'Spherical-coordinate surface',vector3d:'3D vector field'}[mode];
    const plotOptions={responsive:true,displaylogo:false,scrollZoom:true,staticPlot:false};
-   if(graphPlotReady) await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
+   if(graphPlotReady) await Plotly.react('graphPlot',result.traces,graphLayout(title,is3d,{xmin:Number(data.xmin),xmax:Number(data.xmax),ymin:Number(data.ymin),ymax:Number(data.ymax),zmin:Number(data.zmin),zmax:Number(data.zmax)}),plotOptions);
    else await Plotly.newPlot('graphPlot',result.traces,graphLayout(title,is3d),plotOptions);
    graphPlotReady=true;
    graphSetStatus('Plot ready. '+(is2d?'Curve samples are generated in the worker.':'Resolution is capped for smooth interaction.')+' Use the plot controls to rotate, zoom or export.','');
