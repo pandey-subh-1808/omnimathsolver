@@ -1266,6 +1266,148 @@ main.shell>.app-section[hidden]{display:none!important}
   main.shell>.app-section{padding-bottom:115px!important}
 }
 
+
+/* MOBILE REDESIGN v1 — compact, laptop-inspired responsive workspace */
+@media(max-width:760px){
+  /* Give the phone a deliberate app-like canvas without shrinking desktop. */
+  html,body{width:100%;min-width:0;overflow-x:hidden!important}
+  body{font-size:14px;line-height:1.5}
+  main.shell{
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;max-width:none!important;min-width:0!important;
+    height:auto!important;min-height:100dvh!important;max-height:none!important;
+    padding:12px 14px calc(100px + env(safe-area-inset-bottom))!important;
+    gap:14px!important;overflow:visible!important;
+  }
+  main.shell>header.omni-topbar{
+    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;gap:10px!important;
+    width:100%!important;height:auto!important;min-height:58px!important;
+    padding:2px 0 12px!important;margin:0!important;
+    border-bottom:1px solid #2a3d58!important;
+  }
+  .brand{min-width:0!important;gap:10px!important}
+  .mark{
+    width:42px!important;height:42px!important;min-width:42px!important;
+    border-radius:13px!important;font-size:23px!important;
+    box-shadow:0 7px 20px #657cff38!important;
+  }
+  .brand h1{font-size:1.02rem!important;letter-spacing:.08em!important}
+  .tag{max-width:205px!important;font-size:.48rem!important;letter-spacing:.09em!important;line-height:1.35!important}
+  .topbar-center{display:none!important}
+  .header-actions{
+    display:flex!important;flex-direction:row!important;align-items:center!important;
+    justify-content:flex-end!important;gap:7px!important;min-width:0!important;
+  }
+  .status{
+    max-width:148px!important;padding:7px 9px!important;
+    overflow-wrap:anywhere!important;font-size:.62rem!important;line-height:1.3!important;
+    border-radius:11px!important;box-shadow:none!important;
+  }
+  #themeBtn{width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:11px!important}
+  main.shell>.app-section{
+    width:100%!important;max-width:none!important;min-width:0!important;
+    height:auto!important;min-height:0!important;max-height:none!important;
+    margin:0!important;padding:0 0 18px!important;
+    overflow:visible!important;overscroll-behavior:auto!important;
+  }
+  main.shell>.app-section.active{display:block!important}
+  /* Rebuild the landing hero as a compact editorial panel. */
+  .command-hero{
+    display:grid!important;grid-template-columns:minmax(0,1fr) 112px!important;
+    align-items:center!important;gap:8px!important;
+    min-height:0!important;margin:0 0 12px!important;
+    padding:22px 18px!important;border-radius:19px!important;
+    background:linear-gradient(135deg,#14284d 0%,#202f63 58%,#3c2864 100%)!important;
+  }
+  .command-overline{font-size:.53rem!important;letter-spacing:.13em!important;gap:7px!important}
+  .command-hero h2{
+    margin:15px 0 9px!important;font-size:clamp(1.7rem,7.2vw,2.15rem)!important;
+    line-height:1.05!important;letter-spacing:-.06em!important;
+  }
+  .command-hero p{max-width:100%!important;margin:0!important;font-size:.72rem!important;line-height:1.6!important}
+  .command-primary{
+    display:inline-flex!important;align-items:center!important;justify-content:space-between!important;
+    gap:12px!important;min-height:45px!important;margin-top:15px!important;
+    padding:0 13px!important;border-radius:11px!important;font-size:.65rem!important;
+  }
+  .command-secondary{display:block!important;margin-top:9px!important;font-size:.48rem!important;letter-spacing:.1em!important}
+  .hero-equation{width:112px!important;height:124px!important;margin:0!important}
+  .eq-main{font-size:2.05rem!important}
+  .oa{width:105px!important;height:70px!important}
+  .ob{width:82px!important;height:100px!important}
+  .eq-chip{padding:5px 6px!important;font-size:.48rem!important}
+  .ec1{top:4px!important;right:0!important}.ec2{bottom:7px!important;left:0!important}.ec3{bottom:0!important;right:0!important}
+  .system-metrics{
+    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:7px!important;margin:0 0 14px!important;
+  }
+  .metric-card{
+    display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+    justify-content:flex-start!important;gap:4px!important;min-width:0!important;
+    min-height:104px!important;padding:11px 9px!important;border-radius:13px!important;
+  }
+  .metric-card small{font-size:.46rem!important;letter-spacing:.08em!important}
+  .metric-card>b{font-size:1.15rem!important;line-height:1.1!important}
+  .metric-card strong{font-size:.64rem!important;line-height:1.2!important}
+  .metric-card span{font-size:.5rem!important;line-height:1.3!important}
+  .calculator-studio{margin-top:4px!important}
+  .studio-heading{gap:8px!important;margin:0 0 12px!important}
+  .studio-heading h2{font-size:1.25rem!important}
+  .studio-heading p{font-size:.68rem!important;line-height:1.5!important}
+  .studio-heading>span{display:none!important}
+  .calculator-card{display:flex!important;flex-direction:column!important;min-width:0!important}
+  .editor-pane,.result-pane{width:100%!important;min-width:0!important;padding:14px!important}
+  .editor-pane{border-right:0!important;border-bottom:1px solid #263850!important}
+  #input{min-height:155px!important;font-size:14px!important}
+  .editor-meta{font-size:.48rem!important;line-height:1.5!important}
+  .solve-row .btn{width:100%!important;min-height:46px!important}
+  #output{min-width:0!important;overflow-wrap:anywhere!important}
+  /* Cards and graph controls use the full available width. */
+  .card,#toolsSection>.card,#examplesSection>.card,#historySection>.card,#graphSection>.card{
+    min-width:0!important;max-width:100%!important;border-radius:16px!important;
+  }
+  .graph-controls{grid-template-columns:minmax(0,1fr)!important}
+  .graph-range-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .graph-plot{width:100%!important;height:340px!important;min-height:280px!important}
+  /* Bottom navigation floats above Android/iOS browser safe areas. */
+  main.shell>.floating-nav{
+    position:fixed!important;left:10px!important;right:10px!important;
+    top:auto!important;bottom:calc(9px + env(safe-area-inset-bottom))!important;
+    z-index:10000!important;width:auto!important;min-width:0!important;max-width:none!important;
+    height:65px!important;min-height:65px!important;
+    display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    padding:5px!important;gap:3px!important;
+    border:1px solid #405475!important;border-radius:18px!important;
+    background:rgba(11,22,39,.94)!important;
+    box-shadow:0 12px 38px #0008,0 0 0 1px #ffffff08 inset!important;
+    backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important;
+  }
+  .nav-item{
+    display:flex!important;flex-direction:column!important;align-items:center!important;
+    justify-content:center!important;gap:2px!important;min-width:0!important;
+    height:53px!important;min-height:53px!important;padding:3px 1px!important;
+    border-radius:12px!important;font-size:.55rem!important;line-height:1.1!important;
+  }
+  .nav-item .nav-icon{width:auto!important;font-size:1rem!important;line-height:1.1!important}
+  .nav-item.active{background:linear-gradient(145deg,#354f9d,#6242a0)!important;box-shadow:0 5px 16px #4d56bf44!important}
+}
+@media(max-width:390px){
+  .command-hero{grid-template-columns:minmax(0,1fr) 88px!important;padding:18px 14px!important}
+  .hero-equation{width:88px!important;height:110px!important}
+  .eq-main{font-size:1.75rem!important}
+  .oa{width:85px!important}.ob{width:70px!important}
+  .system-metrics{gap:5px!important}
+  .metric-card{padding:9px 7px!important;min-height:98px!important}
+  .metric-card strong{font-size:.59rem!important}
+  .metric-card span{font-size:.46rem!important}
+  .status{max-width:125px!important;font-size:.57rem!important}
+  .tag{max-width:170px!important;font-size:.44rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .command-hero,.metric-card,.nav-item{animation:none!important;transition:none!important}
+}
+
 </style></head>
 <body><main class="shell">
 <header class="omni-topbar"><div class="brand"><div class="mark">∑</div><div><h1>OMNI<span>MATH</span></h1><div class="tag">THE MATHEMATICAL COMPUTING ENVIRONMENT</div></div></div><div class="topbar-center"><i></i> WORKSPACE / <b id="activeWorkspaceLabel">CALCULATOR</b></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
