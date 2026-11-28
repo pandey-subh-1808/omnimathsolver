@@ -481,6 +481,61 @@ main.shell>.app-section[hidden]{display:none!important}
   }
 }
 
+
+
+/* FUTURISTIC AMBIENT BACKGROUND — background only; preserve all UI components */
+body{
+  position:relative;
+  isolation:isolate;
+  background-color:var(--bg)!important;
+  background-image:
+    radial-gradient(ellipse 58% 48% at 78% 4%,rgba(112,91,245,.20),transparent 72%),
+    radial-gradient(ellipse 46% 52% at 5% 82%,rgba(28,173,222,.13),transparent 72%),
+    radial-gradient(ellipse 38% 40% at 94% 88%,rgba(164,91,238,.12),transparent 72%),
+    linear-gradient(135deg,color-mix(in srgb,var(--bg) 96%,#172d58),var(--bg) 48%,color-mix(in srgb,var(--bg) 94%,#423078))!important;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.34;
+  background-image:
+    linear-gradient(rgba(100,125,190,.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(100,125,190,.10) 1px,transparent 1px);
+  background-size:42px 42px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 42%,#000 12%,transparent 82%);
+  mask-image:radial-gradient(ellipse at 50% 42%,#000 12%,transparent 82%);
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:-20%;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.23;
+  background:
+    radial-gradient(circle at 28% 28%,rgba(92,119,255,.18),transparent 22%),
+    radial-gradient(circle at 76% 66%,rgba(33,195,225,.13),transparent 25%);
+  filter:blur(34px);
+  animation:omniAmbientDrift 24s ease-in-out infinite alternate;
+}
+main.shell{position:relative;z-index:1;background:transparent!important}
+@keyframes omniAmbientDrift{
+  from{transform:translate3d(-1.5%,0,0) scale(1)}
+  to{transform:translate3d(1.5%,1%,0) scale(1.04)}
+}
+[data-theme=dark] body{
+  background-image:
+    radial-gradient(ellipse 58% 48% at 78% 4%,rgba(105,82,238,.23),transparent 72%),
+    radial-gradient(ellipse 46% 52% at 5% 82%,rgba(16,164,211,.16),transparent 72%),
+    radial-gradient(ellipse 38% 40% at 94% 88%,rgba(156,79,224,.15),transparent 72%),
+    linear-gradient(135deg,#081322,#0c1728 52%,#11152b)!important;
+}
+[data-theme=dark] body::before{opacity:.27;background-image:linear-gradient(rgba(111,151,208,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(111,151,208,.12) 1px,transparent 1px)}
+@media(prefers-reduced-motion:reduce){body::after{animation:none}}
+
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
