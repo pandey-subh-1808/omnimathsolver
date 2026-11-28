@@ -603,6 +603,27 @@ main.shell{position:relative;z-index:1;background:transparent!important}
  #graphSection .graph-actions .btn{flex:1 1 auto}
 }
 
+
+
+/* Improve graph editor contrast in both themes */
+#graphSection .graph-controls textarea,
+#graphSection .graph-controls input,
+#graphSection .graph-controls select{
+ color:#172b45!important;
+ background-color:#f5f8ff!important;
+ caret-color:#315fe5;
+}
+#graphSection .graph-controls textarea::placeholder,
+#graphSection .graph-controls input::placeholder{color:#667b98!important;opacity:1}
+[data-theme=dark] #graphSection .graph-controls textarea,
+[data-theme=dark] #graphSection .graph-controls input,
+[data-theme=dark] #graphSection .graph-controls select{
+ color:#e8f1ff!important;
+ background-color:#172b43!important;
+}
+[data-theme=dark] #graphSection .graph-controls textarea::placeholder,
+[data-theme=dark] #graphSection .graph-controls input::placeholder{color:#9db2ce!important}
+
 </style></head>
 <body><main class="shell">
 <header><div class="brand"><div class="mark">∑</div><div><h1>Omni<span>Math</span> Solver</h1><div class="tag">Mathematics workbench · Symbolic algebra, calculus & differential equations</div></div></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
@@ -920,7 +941,7 @@ function plotGraph(){
  if(!expressions.length){graphSetStatus('Enter an expression before plotting.','error');return;}
  const btn=$('plotGraph');btn.disabled=true;graphSetStatus('Calculating graph points in background…','busy');
  const data={mode,expressions,xmin:$('graphXMin').value,xmax:$('graphXMax').value,ymin:$('graphYMin').value,ymax:$('graphYMax').value,zmin:$('graphZMin').value,zmax:$('graphZMax').value,tmin:$('graphTMin').value,tmax:$('graphTMax').value};
- const worker=new Worker(new URL('./graph-worker.js?build=range-clamp-v13',document.baseURI));activeGraphWorker=worker;
+ const worker=new Worker(new URL('./graph-worker.js?build=implicit-surface-v14',document.baseURI));activeGraphWorker=worker;
  const fail=message=>{if(seq!==graphPlotSequence)return;btn.disabled=false;activeGraphWorker=null;graphSetStatus(message,'error');};
   const plotTimer=setTimeout(()=>{if(seq===graphPlotSequence&&activeGraphWorker===worker){worker.terminate();activeGraphWorker=null;btn.disabled=false;graphSetStatus('Graph calculation timed out. Reduce the range or choose a simpler expression.','error')}},15000);
  worker.onerror=e=>{clearTimeout(plotTimer);worker.terminate();fail('Graph worker failed to load: '+(e.message||'check the connection and refresh.'));};
