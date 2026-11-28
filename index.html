@@ -1638,7 +1638,8 @@ function boot(){
  }catch(e){engineReady=false;dot.className='dot bad';status.textContent='Web Worker unavailable';console.error(e)}
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');t.focus();preview()}
+function goToCalculator(){const tab=document.querySelector('.nav-item[data-section="calculatorSection"]');if(tab)tab.click()}
+function insert(v){const t=$('input'),a=t.selectionStart,b=t.selectionEnd;t.setRangeText(v,a,b,'end');preview();goToCalculator();t.focus()}
 function splitPreviewArgs(s){
  const out=[];let depth=0,start=0;
  for(let i=0;i<s.length;i++){if(s[i]==='('||s[i]==='[')depth++;else if(s[i]===')'||s[i]===']')depth--;else if(s[i]===','&&depth===0){out.push(s.slice(start,i).trim());start=i+1}}
@@ -1859,7 +1860,7 @@ function init(){
  $('copy').onclick=async()=>{if(!lastAnswer)return;try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard access is unavailable in this browser context.');await navigator.clipboard.writeText(lastAnswer);$('copy').textContent='Copied ✓';setTimeout(()=>$('copy').textContent='Copy answer',1400)}catch(e){$('copy').title='Copy failed: '+e.message}};
  keys.forEach(k=>{const b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=()=>insert(k==='Ans'?lastAnswer||'0':k);$('keypad').append(b)});
  operations.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.onclick=()=>insert(value);$('operations').append(b)});
- samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();calculate()};$('examples').append(b)});
+ samples.forEach(([label,value])=>{const b=document.createElement('button');b.className='btn';b.textContent=label;b.onclick=()=>{$('input').value=value;preview();goToCalculator();calculate()};$('examples').append(b)});
  drawHistory();
  initGraphing();
  const showSection=target=>{
