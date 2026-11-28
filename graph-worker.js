@@ -82,8 +82,23 @@ function plot(m){
   const f=compileLines([normalizeEq(lines[0])])[0],xs=seq(xmin,xmax,LIMITS.implicit),ys=seq(ymin,ymax,LIMITS.implicit),zs=seq(zmin,zmax,LIMITS.implicit),xx=[],yy=[],zz=[],vv=[];
   for(const z of zs)for(const y of ys)for(const x of xs){xx.push(x);yy.push(y);zz.push(z);vv.push(val(f,baseScope({x,y,z})))}
   const finite=vv.filter(Number.isFinite);if(!finite.length)fail('The implicit expression is undefined throughout the selected volume.');
-  const scale=Math.max(...finite.map(Math.abs)),eps=Math.max(scale*0.008,1e-8);
-  traces.push({type:'isosurface',x:xx,y:yy,z:zz,value:vv,isomin:-eps,isomax:eps,surface:{count:1},caps:{x:{show:false},y:{show:false},z:{show:false}},colorscale:'Viridis',showscale:false});
+  const fieldMin=Math.min(...finite),fieldMax=Math.max(...finite);
+  if(fieldMin>0||fieldMax<0){
+   const fmt=n=>Number(n.toPrecision(5));
+   fail('No real surface F(x,y,z)=0 exists inside the selected bounds. Sampled F range: '+fmt(fieldMin)+' to '+fmt(fieldMax)+'. Expand the X, Y and Z ranges or check the equation.');
+  }
+  /* Use a tolerance tied to the sampled field span, not its absolute offset.
+     The old abs(max(F))*0.008 could fabricate broad, misleading isosurfaces. */
+  const eps=Math.max((fieldMax-fieldMin)*0.002,1e-9);
+  traces.push({
+   type:'isosurface',x:xx,y:yy,z:zz,value:vv,
+   isomin:-eps,isomax:eps,surface:{count:1},
+   caps:{x:{show:false},y:{show:false},z:{show:false}},
+   colorscale:[[0,'#22d3ee'],[0.48,'#3b82f6'],[1,'#a78bfa']],
+   opacity:0.96,showscale:false,
+   lighting:{ambient:0.52,diffuse:0.88,specular:0.62,roughness:0.32,fresnel:0.22},
+   lightposition:{x:120,y:180,z:260}
+  });
  }else if(mode==='cylindrical'){
   if(lines.length!==1)fail('Cylindrical mode accepts one expression r(theta,z).');
   const f=compileLines([lines[0].replace(/^r(?:\s*\([^)]*\))?\s*=\s*/i,'')])[0],th=seq(0,2*Math.PI,56),zs=seq(zmin,zmax,34),xx=[],yy=[],zz=[];
