@@ -1408,6 +1408,83 @@ main.shell>.app-section[hidden]{display:none!important}
   .command-hero,.metric-card,.nav-item{animation:none!important;transition:none!important}
 }
 
+
+/* MOBILE HERO FIX v2 — stack decorative maths below copy; never overlap text */
+@media(max-width:760px){
+  /* A single-column hero prevents the illustration occupying the text column. */
+  .command-hero{
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+    justify-content:flex-start!important;gap:0!important;
+    min-height:0!important;height:auto!important;
+    padding:22px 18px 14px!important;margin:0 0 13px!important;
+    overflow:hidden!important;
+  }
+  .command-copy{
+    position:relative!important;z-index:2!important;
+    display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+    width:100%!important;min-width:0!important;max-width:none!important;
+  }
+  .command-overline{
+    width:100%!important;white-space:normal!important;
+    font-size:.56rem!important;letter-spacing:.14em!important;
+  }
+  .command-hero h2{
+    display:block!important;width:100%!important;max-width:100%!important;
+    margin:17px 0 10px!important;
+    font-size:clamp(2rem,8.3vw,2.65rem)!important;
+    line-height:1.04!important;letter-spacing:-.058em!important;
+    overflow-wrap:normal!important;word-break:normal!important;
+  }
+  .command-hero p{
+    display:block!important;width:100%!important;max-width:100%!important;
+    margin:0!important;font-size:.82rem!important;line-height:1.65!important;
+  }
+  .command-primary{
+    display:inline-flex!important;align-self:flex-start!important;
+    width:auto!important;max-width:100%!important;min-height:49px!important;
+    margin-top:18px!important;padding:0 16px!important;
+    white-space:nowrap!important;font-size:.68rem!important;
+  }
+  .command-secondary{
+    display:block!important;margin:10px 0 0!important;
+    font-size:.51rem!important;letter-spacing:.12em!important;
+  }
+  .hero-equation{
+    position:relative!important;z-index:1!important;
+    display:grid!important;place-items:center!important;
+    width:100%!important;max-width:300px!important;height:118px!important;
+    min-height:118px!important;margin:10px auto 0!important;
+    justify-self:auto!important;overflow:visible!important;
+    pointer-events:none!important;opacity:.92!important;
+  }
+  .eq-main{
+    position:relative!important;font-size:2.65rem!important;
+    white-space:nowrap!important;transform:rotate(-5deg)!important;
+  }
+  .oa{width:min(86%,250px)!important;height:76px!important}
+  .ob{width:min(65%,190px)!important;height:105px!important}
+  .eq-chip{padding:5px 7px!important;font-size:.55rem!important}
+  .ec1{top:0!important;right:3%!important}
+  .ec2{bottom:3px!important;left:4%!important}
+  .ec3{bottom:0!important;right:3%!important}
+  /* Keep the engine badge from forcing an oversized header on narrow screens. */
+  .omni-topbar{grid-template-columns:minmax(0,1fr) auto!important;gap:7px!important}
+  .brand{min-width:0!important}
+  .brand>div:last-child{min-width:0!important}
+  .tag{max-width:175px!important;line-height:1.25!important}
+  .header-actions{gap:6px!important}
+  .status{max-width:116px!important;font-size:.56rem!important;line-height:1.3!important;padding:7px 8px!important}
+}
+@media(max-width:390px){
+  .command-hero{padding:19px 15px 12px!important}
+  .command-hero h2{font-size:clamp(1.85rem,8.1vw,2.25rem)!important}
+  .command-hero p{font-size:.77rem!important}
+  .hero-equation{height:105px!important;min-height:105px!important}
+  .eq-main{font-size:2.35rem!important}
+  .tag{max-width:150px!important}
+  .status{max-width:102px!important;font-size:.52rem!important}
+}
+
 </style></head>
 <body><main class="shell">
 <header class="omni-topbar"><div class="brand"><div class="mark">∑</div><div><h1>OMNI<span>MATH</span></h1><div class="tag">THE MATHEMATICAL COMPUTING ENVIRONMENT</div></div></div><div class="topbar-center"><i></i> WORKSPACE / <b id="activeWorkspaceLabel">CALCULATOR</b></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
