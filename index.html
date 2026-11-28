@@ -1639,3 +1639,29 @@ function init(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script></body></html>
+
+\n\n/* FIX: Restore full-page vertical scrolling */
+html,body{
+  height:auto!important;
+  min-height:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+main.shell{
+  height:auto!important;
+  min-height:100dvh!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+main.shell>.app-section{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  flex:0 0 auto!important;
+  padding-bottom:35px!important;
+}
+@media(max-width:760px){
+  main.shell{padding-bottom:100px!important}
+  main.shell>.app-section{padding-bottom:35px!important}
+}
