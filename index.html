@@ -1238,6 +1238,34 @@ main.shell>.app-section.active{animation:novaIn .3s ease both!important}@keyfram
 @media(max-width:760px){main.shell{padding:12px 12px 95px!important;gap:12px!important}main.shell>header.omni-topbar{height:auto!important;min-height:65px!important;flex-wrap:wrap!important;gap:10px!important}.topbar-center{display:none!important}.brand h1{font-size:1rem!important}.tag{font-size:.48rem!important}.status{font-size:.58rem!important;padding:7px 9px!important}main.shell>.floating-nav{left:9px!important;right:9px!important;top:auto!important;bottom:9px!important;width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;flex-direction:row!important;padding:6px!important;border:1px solid #334765!important;border-radius:14px!important;background:#0e192af2!important;backdrop-filter:blur(24px)!important}.floating-nav:before,.floating-nav:after{display:none!important}.nav-item{height:48px!important;min-height:48px!important;flex:initial!important;justify-content:center!important;gap:2px!important;flex-direction:column!important;padding:3px!important;font-size:.56rem!important}.nav-item .nav-icon{font-size:.95rem!important;width:auto!important}.command-hero{grid-template-columns:1fr!important;min-height:0!important;padding:23px!important;border-radius:15px!important}.command-hero h2{font-size:2.05rem!important}.command-hero p{font-size:.78rem!important}.hero-equation{height:130px!important;width:100%!important;margin-top:10px}.eq-main{font-size:3rem}.oa{width:230px;height:110px}.ob{width:180px;height:150px}.system-metrics{grid-template-columns:1fr!important;gap:8px!important}.metric-card{min-height:78px!important;padding:12px!important}.studio-heading h2{font-size:1.25rem!important}.studio-heading>span{display:none}.calculator-card{display:flex!important;flex-direction:column!important;border-radius:13px!important}.editor-pane,.result-pane{padding:16px!important;width:100%!important}.editor-pane{border-right:0;border-bottom:1px solid #263850}#input{min-height:185px!important}.editor-meta{font-size:.42rem!important}#output>.card{min-height:150px!important}#toolsSection>.card,#examplesSection>.card,#historySection>.card,#graphSection>.card{padding:16px!important;border-radius:13px!important}#operations{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.graph-plot{height:380px!important;min-height:330px!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 
+
+/* FIX v2: page-level scrolling; keep this CSS inside the style block */
+html,body{
+  width:100%!important;height:auto!important;min-height:100%!important;
+  max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
+}
+body{position:relative!important}
+main.shell{
+  display:flex!important;flex-direction:column!important;
+  height:auto!important;min-height:100dvh!important;max-height:none!important;
+  overflow:visible!important;
+}
+main.shell>.app-section{
+  display:none!important;flex:0 0 auto!important;width:100%!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  overflow:visible!important;overscroll-behavior:auto!important;
+  padding-bottom:110px!important;
+}
+main.shell>.app-section.active{
+  display:block!important;flex:0 0 auto!important;height:auto!important;
+  min-height:0!important;max-height:none!important;overflow:visible!important;
+}
+main.shell>.app-section[hidden]{display:none!important}
+@media(max-width:760px){
+  main.shell{padding-bottom:100px!important}
+  main.shell>.app-section{padding-bottom:115px!important}
+}
+
 </style></head>
 <body><main class="shell">
 <header class="omni-topbar"><div class="brand"><div class="mark">∑</div><div><h1>OMNI<span>MATH</span></h1><div class="tag">THE MATHEMATICAL COMPUTING ENVIRONMENT</div></div></div><div class="topbar-center"><i></i> WORKSPACE / <b id="activeWorkspaceLabel">CALCULATOR</b></div><div class="header-actions"><div class="status"><span class="dot" id="engineDot"></span><span id="engineStatus">Starting mathematics engine…</span></div><button class="btn" id="themeBtn" title="Toggle theme">◐</button></div></header>
@@ -1640,28 +1668,4 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script></body></html>
 
-\n\n/* FIX: Restore full-page vertical scrolling */
-html,body{
-  height:auto!important;
-  min-height:100%!important;
-  overflow-x:hidden!important;
-  overflow-y:auto!important;
-}
-main.shell{
-  height:auto!important;
-  min-height:100dvh!important;
-  max-height:none!important;
-  overflow:visible!important;
-}
-main.shell>.app-section{
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  overflow:visible!important;
-  flex:0 0 auto!important;
-  padding-bottom:35px!important;
-}
-@media(max-width:760px){
-  main.shell{padding-bottom:100px!important}
-  main.shell>.app-section{padding-bottom:35px!important}
-}
+\n\n
