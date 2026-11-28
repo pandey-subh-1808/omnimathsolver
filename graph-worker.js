@@ -61,7 +61,7 @@ function plot(m){
  if(mode==='2d'){
   const explicitAssignments=lines.map(s=>s.replace(/^[A-Za-z_]\w*\(\s*x\s*\)\s*=\s*/i,'')),implicit=/\by\b/.test(lines[0])||lines[0].includes('=')&&explicitAssignments[0]===lines[0];
   if(implicit){if(lines.length!==1)fail('Plot one implicit equation at a time.');const f=compileLines([normalizeEq(lines[0])])[0],xs=seq(xmin,xmax,150),ys=seq(ymin,ymax,150),zz=ys.map(y=>xs.map(x=>val(f,baseScope({x,y}))));traces.push({type:'contour',name:lines[0],x:xs,y:ys,z:zz,contours:{coloring:'lines',start:0,end:0,size:1},showscale:false,line:{width:2}})}
-  else{const fs=compileLines(explicitAssignments);fs.forEach((f,i)=>{const pts=adaptiveCurve(f,xmin,xmax);traces.push({type:'scatter',mode:'lines',name:lines[i],x:pts.x,y:pts.y,connectgaps:false})})}
+  else{const fs=compileLines(explicitAssignments);fs.forEach((f,i)=>{const pts=adaptiveCurve(f,xmin,xmax),clipped=pts.y.map(v=>Number.isFinite(v)&&v>=ymin&&v<=ymax?v:NaN);traces.push({type:'scatter',mode:'lines',name:lines[i],x:pts.x,y:clipped,connectgaps:false})})}
  }else if(mode==='polar'){
   const polarLines=lines.map(s=>s.replace(/^r(?:\s*\([^)]*\))?\s*=\s*/i,'')),fs=compileLines(polarLines),theta=seq(xmin,xmax,1400);fs.forEach((f,i)=>{const r=theta.map(t=>val(f,baseScope({theta:t,t})));traces.push({type:'scatter',mode:'lines',name:lines[i],x:r.map((v,j)=>v*Math.cos(theta[j])),y:r.map((v,j)=>v*Math.sin(theta[j])),connectgaps:false})});
  }else if(mode==='surface'){
